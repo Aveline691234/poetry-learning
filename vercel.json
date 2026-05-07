@@ -2,27 +2,51 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.py",
+      "src": "api/chat.py",
       "use": "@vercel/python"
     },
     {
-      "src": "**/*.html",
+      "src": "api/progress.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "corpus/**",
+      "src": "index_optimized.html",
       "use": "@vercel/static"
     },
     {
-      "src": "assets/**",
+      "src": "recite.html",
       "use": "@vercel/static"
     },
     {
-      "src": "css/**",
+      "src": "camera.html",
       "use": "@vercel/static"
     },
     {
-      "src": "js/**",
+      "src": "chat.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "game.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "login.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "progress.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "teacher.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "corpus/poem_data.json",
       "use": "@vercel/static"
     }
   ],
@@ -34,6 +58,10 @@
     {
       "src": "/api/progress",
       "dest": "/api/progress.py"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
