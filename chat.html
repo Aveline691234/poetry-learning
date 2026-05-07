@@ -163,21 +163,23 @@
     </div>
 
     <div id="configModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
-        <div class="bg-white rounded-2xl p-6 max-w-md mx-4 w-full shadow-2xl">
+        <div class="bg-white rounded-2xl p-6 max-w-md mx-4 w-full shadow-2xl max-h-[80vh] overflow-y-auto">
             <h3 class="text-xl font-bold text-[var(--text-dark)] mb-5">⚙️ AI配置</h3>
             <div class="mb-5">
                 <label class="block text-[var(--text-medium)] mb-2" style="font-size: 18px;">AI模式：</label>
                 <div class="flex gap-3">
-                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 18px;" data-mode="local">本地模式</button>
-                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 18px;" data-mode="deepseek">DeepSeek</button>
+                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 18px;" data-mode="local">🏠 本地模式</button>
+                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 18px;" data-mode="deepseek">🤖 DeepSeek API</button>
                 </div>
+                <p class="text-[var(--text-light)] text-sm mt-2">本地模式无需联网，DeepSeek模式需要API Key</p>
+            </div>
+            <div id="apiKeySection" class="mb-5 hidden">
+                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 18px;">🔑 DeepSeek API Key：</label>
+                <input type="password" id="apiKeyInput" class="w-full border-2 border-[#EBE5DB] rounded-xl px-4 py-3" style="font-size: 18px;" placeholder="输入您的DeepSeek API Key">
+                <p class="text-[var(--text-light)] text-sm mt-2">获取API Key：<a href="https://platform.deepseek.com/" target="_blank" class="text-blue-500 underline">platform.deepseek.com</a></p>
             </div>
             <div class="mb-5">
-                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 18px;">后端地址：</label>
-                <input type="text" id="backendUrlInput" class="w-full border-2 border-[#EBE5DB] rounded-xl px-4 py-3" style="font-size: 18px;" value="">
-            </div>
-            <div class="mb-5">
-                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 18px;">语音选择：</label>
+                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 18px;">🔊 语音选择：</label>
                 <select id="voiceSelect" class="w-full border-2 border-[#EBE5DB] rounded-xl px-4 py-3" style="font-size: 18px;">
                     <option value="auto">自动选择最佳语音</option>
                 </select>
@@ -191,7 +193,7 @@
 
     <script>
         const App = {
-            config: { mode: 'local', backendUrl: '' },
+            config: { mode: 'local', backendUrl: '', apiKey: '' },
             isListening: false,
             isAISpeaking: false,
             recognition: null,
@@ -227,7 +229,7 @@
                     const saved = localStorage.getItem('poetry_config');
                     if (saved) {
                         this.config = JSON.parse(saved);
-                        document.getElementById('backendUrlInput').value = this.config.backendUrl || '';
+                        document.getElementById('apiKeyInput').value = this.config.apiKey || '';
                     }
                     const modeBtns = document.querySelectorAll('.mode-btn');
                     modeBtns.forEach(btn => {
@@ -238,8 +240,20 @@
                             btn.classList.add('bg-blue-100', 'text-blue-700');
                         }
                     });
+                    this.updateConfigSections();
                 } catch (e) {}
                 this.loadVoiceList();
+            },
+
+            updateConfigSections() {
+                const apiKeySection = document.getElementById('apiKeySection');
+                if (!apiKeySection) return;
+
+                if (this.config.mode === 'deepseek') {
+                    apiKeySection.classList.remove('hidden');
+                } else {
+                    apiKeySection.classList.add('hidden');
+                }
             },
 
             loadVoiceList() {
@@ -504,11 +518,21 @@
                 try {
                     this.addTypingIndicator();
                     const messages = [{ role: 'system', content: this.SYSTEM_PROMPT }, ...this.conversationHistory.slice(-8), { role: 'user', content: input }];
-                    const response = await fetch(`${this.config.backendUrl}/api/chat`, {
+                    
+                    const response = await fetch('https://api.deepseek.com/chat/completions', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ messages })
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.config.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-chat',
+                            messages: messages,
+                            temperature: 0.7,
+                            max_tokens: 500
+                        })
                     });
+                    
                     this.removeTypingIndicator();
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const data = await response.json();
@@ -535,14 +559,20 @@
                 this.addUserMessage(text);
 
                 if (this.config.mode === 'deepseek') {
+                    if (!this.config.apiKey) {
+                        const fallback = this.getLocalAIResponse(text);
+                        this.addAIMessage(`⚠️ 未配置API Key，已切换到本地模式。\n\n${fallback}`);
+                        this.speakText(`未配置API Key，已切换到本地模式。${fallback}`);
+                        return;
+                    }
                     const response = await this.getDeepSeekAIResponse(text);
                     if (response) {
                         this.addAIMessage(response);
                         this.speakText(response);
                     } else {
                         const fallback = this.getLocalAIResponse(text);
-                        this.addAIMessage(fallback);
-                        this.speakText(fallback);
+                        this.addAIMessage(`⚠️ AI服务暂时不可用，已切换到本地模式。\n\n${fallback}`);
+                        this.speakText(`AI服务暂时不可用，已切换到本地模式。${fallback}`);
                     }
                 } else {
                     const response = this.getLocalAIResponse(text);
@@ -587,20 +617,23 @@
                 document.getElementById('saveConfig').addEventListener('click', () => {
                     const activeMode = document.querySelector('.mode-btn.bg-blue-100');
                     this.config.mode = activeMode?.dataset.mode || 'local';
-                    this.config.backendUrl = document.getElementById('backendUrlInput').value;
+                    this.config.apiKey = document.getElementById('apiKeyInput').value;
                     const voiceSelect = document.getElementById('voiceSelect');
                     if (voiceSelect) {
                         this.config.voiceIndex = voiceSelect.value;
                     }
                     localStorage.setItem('poetry_config', JSON.stringify(this.config));
                     document.getElementById('configModal').classList.add('pointer-events-none', 'opacity-0');
-                    this.addAIMessage(`配置已保存！当前模式：${this.config.mode === 'deepseek' ? 'DeepSeek AI' : '本地AI'}`);
+                    const modeName = this.config.mode === 'deepseek' ? 'DeepSeek AI' : '本地AI';
+                    this.addAIMessage(`配置已保存！当前模式：${modeName}`);
                 });
                 document.querySelectorAll('.mode-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('bg-blue-100', 'text-blue-700'); b.classList.add('bg-[var(--stone)]', 'text-[var(--text-medium)]'); });
                         btn.classList.remove('bg-[var(--stone)]', 'text-[var(--text-medium)]');
                         btn.classList.add('bg-blue-100', 'text-blue-700');
+                        this.config.mode = btn.dataset.mode;
+                        this.updateConfigSections();
                     });
                 });
                 document.getElementById('resetBtn').addEventListener('click', () => {
