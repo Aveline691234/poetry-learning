@@ -2,26 +2,26 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        
-    - name: Install Vercel CLI
-      run: npm install -g vercel@53.2.0
-      
-    - name: Deploy to Vercel
-      run: vercel --prod --confirm --token ${{ secrets.VERCEL_TOKEN }}
-      
-    - name: Output deployment URL
-      run: echo "Deployment completed! Visit: https://poetry-learning-phi.vercel.app"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@53.2.0
+
+      - name: Deploy to Vercel
+        run: vercel --prod --confirm --token ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Output URL
+        run: echo "Deployed successfully"
