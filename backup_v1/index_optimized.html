@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI古诗小老师 - 泊船瓜洲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #8B7355;
+            --primary-light: #9B8365;
+            --primary-dark: #6B5545;
+            --gold: #C9A96E;
+            --gold-light: #D4B87A;
+            --stone-light: #FDFCFA;
+            --stone: #F9F6F1;
+            --stone-dark: #EBE5DB;
+            --text-dark: #4A3F35;
+            --text-medium: #6B5545;
+            --text-light: #9B8365;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(180deg, #FDFCFA 0%, #F9F6F1 100%);
+            min-height: 100vh;
+        }
+
+        .poem-text { font-family: 'Ma Shan Zheng', cursive; }
+
+        /* 统一卡片样式 */
+        .card {
+            background: linear-gradient(145deg, #FFFFFF 0%, #FDFCFA 100%);
+            border: 1px solid #EBE5DB;
+            border-radius: 18px;
+            box-shadow: 0 4px 16px rgba(139, 119, 89, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 24px rgba(139, 119, 89, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: 14px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(139, 119, 89, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%);
+            color: var(--text-medium);
+            border-radius: 14px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #FAF5ED 0%, var(--stone) 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-camera {
+            background: linear-gradient(135deg, #7A9CBF 0%, #6A8BAD 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-camera:hover:not(:disabled) {
+            background: linear-gradient(135deg, #8AABCF 0%, #7A9CBD 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-camera:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* 麦克风按钮 */
+        .mic-btn {
+            background: linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 50%, #5B4738 100%);
+            border: 3px solid var(--gold);
+            box-shadow: 0 6px 20px rgba(139, 119, 89, 0.35), inset 0 2px 4px rgba(255,255,255,0.15);
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mic-btn:hover {
+            background: linear-gradient(145deg, var(--primary-light) 0%, var(--primary) 50%, var(--primary-dark) 100%);
+            transform: scale(1.05);
+        }
+
+        .mic-btn.listening {
+            background: linear-gradient(145deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 6px 20px rgba(201, 169, 110, 0.4); }
+            50% { box-shadow: 0 6px 30px rgba(201, 169, 110, 0.7); }
+        }
+
+        /* 诗句样式 */
+        .poem-line {
+            background: linear-gradient(135deg, #FFFDF8 0%, #F8F4EC 100%);
+            border-left: 5px solid var(--gold);
+            border-radius: 0 14px 14px 0;
+            padding: 18px 24px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .poem-line:hover {
+            background: linear-gradient(135deg, #FFF9F0 0%, #F5EEDD 100%);
+            border-left-color: var(--gold-light);
+            transform: translateX(4px);
+        }
+
+        .poem-line.active {
+            background: linear-gradient(135deg, #FEF3E2 0%, #FDE8C3 100%);
+            border-left-color: #F59E0B;
+            box-shadow: 0 3px 12px rgba(245, 158, 11, 0.15);
+        }
+
+        .poem-line.completed {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            border-left-color: #66BB6A;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+            border-radius: 9999px;
+            height: 12px;
+            box-shadow: 0 0 12px rgba(201, 169, 110, 0.4);
+        }
+
+        /* AI头像 */
+        .ai-avatar {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .wave {
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+
+        /* 聊天气泡 */
+        .chat-bubble-ai {
+            background: linear-gradient(135deg, #FEF9F0 0%, #FAF3E8 100%);
+            border-radius: 16px 16px 16px 6px;
+            padding: 16px 20px;
+            max-width: 85%;
+        }
+
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #E8F4FC 0%, #D9EDF7 100%);
+            border-radius: 16px 16px 6px 16px;
+            padding: 16px 20px;
+            max-width: 85%;
+        }
+
+        /* 背诵字符 */
+        .recite-char {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: var(--stone);
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+            color: var(--text-dark);
+        }
+
+        .recite-char.highlight {
+            background: #FEF3E2;
+            border: 2px solid #F59E0B;
+            transform: scale(1.15);
+        }
+
+        .recite-char.correct {
+            background: #E8F5E9;
+            border: 2px solid #66BB6A;
+            color: #2E7D32;
+        }
+
+        .recite-char.wrong {
+            background: #FFEEEE;
+            border: 2px solid #EF4444;
+            color: #C62828;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- 主容器 -->
+    <div class="max-w-7xl mx-auto px-10 py-8" style="max-width: 1500px;">
+        <!-- 顶部标题栏 -->
+        <div class="flex items-center justify-between mb-10">
+            <div class="relative">
+                <h1 class="text-4xl font-bold text-[var(--text-dark)] tracking-wider" style="font-size: 28px;">AI古诗小老师</h1>
+                <p class="text-[var(--text-light)] mt-2" style="font-size: 20px;">与智者对话 · 习古诗风韵</p>
+            </div>
+            <div class="flex gap-4">
+                <button id="configBtn" type="button" class="btn-secondary flex items-center gap-2">
+                    <span class="text-2xl">⚙️</span>
+                    配置智能AI
+                </button>
+                <button id="quickReplyBtn" type="button" class="btn-primary flex items-center gap-2">
+                    <span class="text-2xl">💡</span>
+                    快捷回复
+                </button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="flex gap-8">
+            <!-- 左栏：古诗卡片 + 学习进度 -->
+            <div class="w-72 flex-shrink-0 space-y-8">
+                <!-- 古诗卡片 -->
+                <div class="card p-6">
+                    <div class="text-center mb-5">
+                        <h2 class="poem-text text-[var(--text-dark)] mb-2" style="font-size: 24px;">泊船瓜洲</h2>
+                        <p class="text-[var(--text-light)]" style="font-size: 18px;">【宋】王安石</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="poem-line" data-line="0">
+                            <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 20px;">京口瓜洲一水间</p>
+                            <p class="text-center text-[var(--text-light)] mt-1" style="font-size: 15px;">jīng kǒu guā zhōu yī shuǐ jiān</p>
+                        </div>
+                        <div class="poem-line" data-line="1">
+                            <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 20px;">钟山只隔数重山</p>
+                            <p class="text-center text-[var(--text-light)] mt-1" style="font-size: 15px;">zhōng shān zhǐ gé shù zhòng shān</p>
+                        </div>
+                        <div class="poem-line" data-line="2">
+                            <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 20px;">春风又绿江南岸</p>
+                            <p class="text-center text-[var(--text-light)] mt-1" style="font-size: 15px;">chūn fēng yòu lǜ jiāng nán àn</p>
+                        </div>
+                        <div class="poem-line" data-line="3">
+                            <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 20px;">明月何时照我还</p>
+                            <p class="text-center text-[var(--text-light)] mt-1" style="font-size: 15px;">míng yuè hé shí zhào wǒ huán</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习进度 -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="font-bold text-[var(--text-medium)]" style="font-size: 20px;">学习进度</span>
+                        <span id="stars" class="text-[var(--gold-dark)] font-bold" style="font-size: 24px;">☆☆☆</span>
+                    </div>
+                    <div class="w-full bg-[var(--stone)] rounded-full h-3 overflow-hidden">
+                        <div id="progressBar" class="progress-bar h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-3">
+                        <span id="learnedCount" class="text-[var(--text-light)]" style="font-size: 18px;">已学 0/4 句</span>
+                        <span id="reciteStatus" class="text-[var(--text-light)]" style="font-size: 18px;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中栏：背诵挑战区 -->
+            <div class="flex-1">
+                <!-- 背诵模块 -->
+                <div id="reciteModule" class="card p-8 mb-8">
+                    <div class="text-center mb-7">
+                        <h3 class="font-bold text-[var(--text-dark)] mb-2" style="font-size: 26px;">🎯 背诵挑战</h3>
+                        <p class="text-[var(--text-light)]" style="font-size: 20px;">跟随老师一句一句背诵古诗</p>
+                    </div>
+
+                    <!-- 当前背诵诗句 -->
+                    <div class="mb-7 p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl text-center">
+                        <p class="text-[var(--text-medium)] mb-3" style="font-size: 20px;">请背诵第 <span id="currentReciteLine" class="font-bold text-amber-600" style="font-size: 22px;">1</span> 句</p>
+                        <div id="recitePrompt" class="poem-text text-[var(--text-dark)]" style="font-size: 28px;">京口瓜洲一水间</div>
+                    </div>
+
+                    <!-- 逐字显示 -->
+                    <div id="characterDisplay" class="flex flex-wrap justify-center gap-2 mb-7">
+                        <span class="recite-char">京</span>
+                        <span class="recite-char">口</span>
+                        <span class="recite-char">瓜</span>
+                        <span class="recite-char">洲</span>
+                        <span class="recite-char">一</span>
+                        <span class="recite-char">水</span>
+                        <span class="recite-char">间</span>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="flex justify-center gap-5 mb-5">
+                        <button id="hintBtn" type="button" class="btn-secondary flex items-center gap-2">
+                            💡 给我提示
+                        </button>
+                        <button id="startReciteBtn" type="button" class="btn-primary flex items-center gap-2">
+                            🎤 开始背诵
+                        </button>
+                        <button id="skipBtn" type="button" class="btn-secondary flex items-center gap-2">
+                            ➡️ 跳过这句
+                        </button>
+                    </div>
+
+                    <!-- AI提示区 -->
+                    <div id="reciteHintArea" class="hidden p-5 bg-blue-50 rounded-xl text-center">
+                        <span id="reciteHintText" class="text-blue-700" style="font-size: 20px;">提示：这是一句描写地理位置的诗...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右栏：摄像头 + AI聊天 -->
+            <div class="w-80 flex-shrink-0 space-y-8">
+                <!-- 摄像头模块 -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="font-bold text-[var(--text-medium)]" style="font-size: 19px;">📹 小老师在看着你</span>
+                    </div>
+                    <div class="relative aspect-video bg-gray-100 rounded-xl overflow-hidden mb-4">
+                        <video id="video" autoplay muted playsinline class="w-full h-full object-cover"></video>
+                        <div class="absolute inset-0 flex items-center justify-center bg-gray-100/80" id="cameraPlaceholder">
+                            <div class="text-center">
+                                <div class="text-3xl mb-2">📷</div>
+                                <p class="text-gray-500" style="font-size: 15px;">点击下方按钮开启</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center gap-3">
+                        <button id="startCamera" type="button" class="btn-camera">开启摄像头</button>
+                        <button id="stopCamera" type="button" class="btn-camera" disabled>关闭摄像头</button>
+                    </div>
+                </div>
+
+                <!-- AI对话区域 -->
+                <div class="card p-6">
+                    <!-- AI头像区域 -->
+                    <div class="flex items-center gap-4 mb-5">
+                        <div class="w-18 h-18 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-3xl ai-avatar shadow-lg" style="width: 72px; height: 72px;">
+                            🧑‍🏫
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-[var(--text-dark)]" style="font-size: 20px;">古诗小老师</h3>
+                            <p class="text-[var(--text-light)]" style="font-size: 17px;" id="aiMood">准备开讲...</p>
+                        </div>
+                    </div>
+
+                    <!-- 聊天区域 -->
+                    <div id="chatArea" class="h-96 overflow-y-auto mb-6 space-y-4 p-5 bg-[var(--stone)] rounded-xl">
+                        <div class="flex gap-3">
+                            <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-sm flex-shrink-0">🤖</div>
+                            <div class="chat-bubble-ai">
+                                <p class="text-[var(--text-dark)]" style="font-size: 19px;">你好呀！我是你的古诗小老师！今天我们来学王安石的《泊船瓜洲》，准备好了吗？</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 麦克风区域 -->
+                    <div class="flex flex-col items-center">
+                        <button id="speakButton" type="button" class="mic-btn">🎤</button>
+                        <div id="listeningIndicator" class="mt-4 hidden">
+                            <div class="flex gap-2 justify-center">
+                                <span class="w-2 h-7 bg-amber-400 rounded wave" style="animation-delay: 0s;"></span>
+                                <span class="w-2 h-9 bg-amber-400 rounded wave" style="animation-delay: 0.1s;"></span>
+                                <span class="w-2 h-11 bg-amber-400 rounded wave" style="animation-delay: 0.2s;"></span>
+                                <span class="w-2 h-9 bg-amber-400 rounded wave" style="animation-delay: 0.3s;"></span>
+                                <span class="w-2 h-7 bg-amber-400 rounded wave" style="animation-delay: 0.4s;"></span>
+                            </div>
+                            <p class="text-center text-[var(--text-light)] mt-3" style="font-size: 17px;">正在听...</p>
+                        </div>
+                        <p id="micHint" class="text-[var(--text-light)] mt-4" style="font-size: 18px;">点击麦克风说话</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置弹窗 -->
+    <div id="configModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-7 max-w-lg mx-4 w-full shadow-2xl">
+            <h3 class="text-2xl font-bold text-[var(--text-dark)] mb-6">⚙️ AI配置</h3>
+            <div class="mb-6">
+                <label class="block text-[var(--text-medium)] mb-3" style="font-size: 19px;">AI模式：</label>
+                <div class="flex gap-4">
+                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-6 py-4 rounded-xl" style="font-size: 19px;" data-mode="local">本地模式</button>
+                    <button class="mode-btn flex-1 bg-blue-100 text-blue-700 px-6 py-4 rounded-xl" style="font-size: 19px;" data-mode="deepseek">DeepSeek</button>
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-[var(--text-medium)] mb-3" style="font-size: 19px;">后端地址：</label>
+                <input type="text" id="backendUrlInput" class="w-full border-2 border-[var(--stone-dark)] rounded-xl px-5 py-4" style="font-size: 19px;" placeholder="http://localhost:8000" value="http://localhost:8000">
+            </div>
+            <div class="flex gap-4">
+                <button id="cancelConfig" type="button" class="flex-1 btn-secondary py-3" style="font-size: 19px;">取消</button>
+                <button id="saveConfig" type="button" class="flex-1 btn-primary py-3" style="font-size: 19px;">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷回复弹窗 -->
+    <div id="quickReplyModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-7 max-w-lg mx-4 w-full shadow-2xl">
+            <h3 class="text-2xl font-bold text-[var(--text-dark)] mb-6">💡 快捷回复</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <button class="quick-reply-btn bg-blue-50 hover:bg-blue-100 text-blue-700 p-5 rounded-xl text-left" style="font-size: 19px;">我想学古诗</button>
+                <button class="quick-reply-btn bg-green-50 hover:bg-green-100 text-green-700 p-5 rounded-xl text-left" style="font-size: 19px;">开始背诵</button>
+                <button class="quick-reply-btn bg-amber-50 hover:bg-amber-100 text-amber-700 p-5 rounded-xl text-left" style="font-size: 19px;">第一句什么意思</button>
+                <button class="quick-reply-btn bg-purple-50 hover:bg-purple-100 text-purple-700 p-5 rounded-xl text-left" style="font-size: 19px;">教我背诗</button>
+                <button class="quick-reply-btn bg-pink-50 hover:bg-pink-100 text-pink-700 p-5 rounded-xl text-left" style="font-size: 19px;">你好可爱</button>
+                <button class="quick-reply-btn bg-orange-50 hover:bg-orange-100 text-orange-700 p-5 rounded-xl text-left" style="font-size: 19px;">有点难</button>
+            </div>
+            <button id="closeQuickReply" type="button" class="w-full mt-6 btn-secondary py-4" style="font-size: 19px;">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置 ====================
+        let config = { mode: 'local', backendUrl: 'http://localhost:8000' };
+
+        // ==================== 状态变量 ====================
+        let isListening = false, recognition = null, learnedLines = 0;
+        let currentReciteIndex = 0, reciteTimeout = null;
+        let isReciting = false;
+        let reciteHints = [
+            ["京口和瓜洲是两个地名，隔着一条长江", "第一个字是'京'", "这句有7个字"],
+            ["诗人王安石的家乡在钟山", "和家有关", "这句描写诗人离家不远"],
+            ["这是全诗最有名的一句！春风和小草有关", "那个字是颜色", "写春天来了"],
+            ["诗人望着什么想家？", "和月亮有关", "表达了思念家乡的心情"]
+        ];
+
+        // ==================== DOM元素 ====================
+        const chatArea = document.getElementById('chatArea');
+        const speakButton = document.getElementById('speakButton');
+        const listeningIndicator = document.getElementById('listeningIndicator');
+        const micHint = document.getElementById('micHint');
+        const aiAvatar = document.getElementById('aiAvatar');
+        const aiMood = document.getElementById('aiMood');
+        const progressBar = document.getElementById('progressBar');
+        const learnedCount = document.getElementById('learnedCount');
+        const stars = document.getElementById('stars');
+        const video = document.getElementById('video');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const startCameraBtn = document.getElementById('startCamera');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const reciteModule = document.getElementById('reciteModule');
+        const startReciteBtn = document.getElementById('startReciteBtn');
+        const hintBtn = document.getElementById('hintBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const reciteHintArea = document.getElementById('reciteHintArea');
+        const reciteHintText = document.getElementById('reciteHintText');
+        const currentReciteLine = document.getElementById('currentReciteLine');
+        const recitePrompt = document.getElementById('recitePrompt');
+        const characterDisplay = document.getElementById('characterDisplay');
+        const reciteStatus = document.getElementById('reciteStatus');
+
+        const POEM_DATA = {
+            title: "泊船瓜洲", author: "王安石",
+            content: ["京口瓜洲一水间", "钟山只隔数重山", "春风又绿江南岸", "明月何时照我还"]
+        };
+
+        // ==================== 语音识别 ====================
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window) recognition = new webkitSpeechRecognition();
+            else if ('SpeechRecognition' in window) recognition = new SpeechRecognition();
+            else return null;
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'zh-CN';
+            recognition.onstart = () => {
+                isListening = true;
+                speakButton.classList.add('listening');
+                listeningIndicator.classList.remove('hidden');
+                micHint.textContent = '请说话...';
+                updateAIStatus('👂', '倾听中...');
+            };
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                }
+                if (finalTranscript) handleUserInput(finalTranscript);
+            };
+            recognition.onerror = (event) => {
+                stopListening();
+                if (event.error === 'no-speech') addAIMessage("没听清楚呢，再说一次好吗？");
+                else if (event.error === 'not-allowed') addAIMessage("请允许使用麦克风哦！点击地址栏旁边的小锁图标设置。");
+            };
+            recognition.onend = () => stopListening();
+            return recognition;
+        }
+
+        function toggleListening() { stopCurrentSpeech(); isListening ? stopListening() : startListening(); }
+
+        function stopCurrentSpeech() {
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            updateAIStatus('💤', '等待中...');
+        }
+
+        function startListening() {
+            if (!recognition) initSpeechRecognition();
+            if (!recognition) { addAIMessage("抱歉，您的浏览器不支持语音识别，请使用Chrome或Edge浏览器。"); return; }
+            try { recognition.start(); } catch (e) { recognition = null; initSpeechRecognition(); recognition.start(); }
+        }
+
+        function stopListening() {
+            isListening = false;
+            speakButton.classList.remove('listening');
+            listeningIndicator.classList.add('hidden');
+            micHint.textContent = '点击麦克风说话';
+            if (recognition) { try { recognition.stop(); } catch (e) {} }
+            updateAIStatus('💤', '等待中...');
+        }
+
+        // ==================== 语音合成 ====================
+        function removeEmoji(text) {
+            return text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/[\u{2600}-\u{26FF}]/gu, '')
+                      .replace(/[\u{2700}-\u{27BF}]/gu, '').replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+                      .replace(/[\u{1F680}-\u{1F6FF}]/gu, '').replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '').trim();
+        }
+
+        function speakText(text, onFinishCallback = null) {
+            updateAIStatus('🗣️', '说话中...');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(removeEmoji(text));
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => v.lang.includes('zh')) || voices[0];
+                if (preferredVoice) utterance.voice = preferredVoice;
+                utterance.onend = () => { 
+                    updateAIStatus('💤', '等待中...'); 
+                    if (onFinishCallback) onFinishCallback(); 
+                };
+                utterance.onerror = () => { 
+                    updateAIStatus('💤', '等待中...'); 
+                    if (onFinishCallback) onFinishCallback(); 
+                };
+                window.speechSynthesis.speak(utterance);
+            } else {
+                if (onFinishCallback) onFinishCallback();
+            }
+        }
+
+        // ==================== 摄像头 ====================
+        let videoStream = null;
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
+                cameraPlaceholder.style.display = 'none';
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+            } catch (err) { alert('无法访问摄像头，请检查权限设置'); }
+        }
+        function stopCamera() {
+            if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
+            video.srcObject = null;
+            cameraPlaceholder.style.display = 'flex';
+            startCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+        }
+
+        // ==================== UI更新 ====================
+        function updateAIStatus(icon, mood) { aiMood.textContent = mood; }
+
+        function addAIMessage(text, type = 'normal') {
+            const div = document.createElement('div');
+            div.className = 'flex gap-3';
+            let bgClass = 'chat-bubble-ai';
+            if (type === 'thinking') bgClass = 'bg-blue-50';
+            if (type === 'warning') bgClass = 'bg-yellow-50';
+            div.innerHTML = `<div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-sm flex-shrink-0">🤖</div>
+                <div class="${bgClass} p-4 max-w-[85%]"><p class="text-[var(--text-dark)]" style="font-size: 19px;">${text}</p></div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'flex gap-3 justify-end';
+            div.innerHTML = `<div class="chat-bubble-user p-4 max-w-[85%]"><p class="text-[var(--text-dark)]" style="font-size: 19px;">${text}</p></div>
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-sm flex-shrink-0 text-white">👦</div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function updateProgress() {
+            const progress = (learnedLines / POEM_DATA.content.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            learnedCount.textContent = `已学 ${learnedLines}/4 句`;
+            if (learnedLines === 4) stars.textContent = '★★★';
+            else if (learnedLines >= 2) stars.textContent = '★★☆';
+            else if (learnedLines >= 1) stars.textContent = '★☆☆';
+            localStorage.setItem('learnedLines', learnedLines.toString());
+        }
+
+        // ==================== AI回复 ====================
+        function getLocalAIResponse(input) {
+            const inp = input.toLowerCase();
+            if (inp.includes('背诵') || inp.includes('背诗') || inp.includes('背古诗')) return "太好了！让我们开始背诵吧！点击下方「开始背诵」按钮，我会一句一句带你背！";
+            if (inp.includes('开始') && inp.includes('背诵')) { startRecitation(); return null; }
+            if (anyMatch(inp, ['你好', '嗨', '哈喽', 'hi', '早'])) return "你好呀！很高兴见到你！我是古诗小老师，今天我们来学王安石的《泊船瓜洲》吧！";
+            if (anyMatch(inp, ['第一句', '京口'])) { learnedLines = Math.max(learnedLines, 1); updateProgress(); return "第一句是「京口瓜洲一水间」！意思是京口和瓜洲这两个地方之间，只隔着一条长江而已。"; }
+            if (anyMatch(inp, ['第二句', '钟山'])) { learnedLines = Math.max(learnedLines, 2); updateProgress(); return "第二句是「钟山只隔数重山」！钟山就是王安石的家乡呢。"; }
+            if (anyMatch(inp, ['第三句', '春风', '绿'])) { learnedLines = Math.max(learnedLines, 3); updateProgress(); return "第三句「春风又绿江南岸」写得可美了！春天来了，春风一吹，长江南岸都变绿啦！"; }
+            if (anyMatch(inp, ['第四句', '明月'])) { learnedLines = Math.max(learnedLines, 4); updateProgress(); return "最后一句「明月何时照我还」好温柔啊！诗人望着天上的月亮，想念家乡呢！"; }
+            if (anyMatch(inp, ['这首诗', '什么意思', '讲什么'])) return "这首诗讲的是王安石坐船经过瓜洲，看到江南春色，想念家乡的故事。京口和瓜洲只隔一条江，钟山也不远。可是春天来了，绿色的江南真美啊，我什么时候才能回家呢？";
+            if (anyMatch(inp, ['作者', '王安石'])) return "这首诗是宋代大文豪王安石写的！他是宋朝著名的政治家和文学家，写这首诗的时候，他正要去做宰相呢！";
+            if (anyMatch(inp, ['真棒', '厉害', '棒', '可爱', '喜欢你'])) return "谢谢谢谢！能被你喜欢，我好开心呀！我们继续学习吧？";
+            if (anyMatch(inp, ['不知道', '不懂', '难'])) return "没关系没关系！古诗本来就是要慢慢学的。我们先从第一句开始好不好？「京口瓜洲一水间」，意思是京口和瓜洲之间只隔着一条长江！";
+            const defaults = ["你想学哪一句呢？可以问我诗句的意思哦！", "要不要试着开始背诵？我们一句一句来！", "这首诗有一个字用得特别妙，你知道是哪个吗？提示：是颜色！"];
+            return defaults[Math.floor(Math.random() * defaults.length)];
+        }
+
+        function anyMatch(input, keywords) { return keywords.some(k => input.includes(k)); }
+
+        async function getDeepSeekAIResponse(input) {
+            try {
+                const response = await fetch(`${config.backendUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: '你是一个温柔耐心的古诗老师，正在教用户学习王安石的《泊船瓜洲》。请用亲切、易懂的方式回答用户的问题。' },
+                            { role: 'user', content: input }
+                        ]
+                    })
+                });
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content || '抱歉，AI没有回应';
+            } catch (error) {
+                console.error('DeepSeek API error:', error);
+                return '抱歉，连接AI失败了，请检查网络或配置';
+            }
+        }
+
+        async function handleUserInput(text) {
+            addUserMessage(text);
+            if (isReciting && checkRecitation(text)) return;
+
+            if (config.mode === 'deepseek') {
+                const response = await getDeepSeekAIResponse(text);
+                addAIMessage(response);
+                speakText(response);
+            } else {
+                const response = getLocalAIResponse(text);
+                if (response !== null) {
+                    addAIMessage(response);
+                    speakText(response);
+                }
+            }
+        }
+
+        // ==================== 背诵模块 ====================
+        function initRecitation() {
+            isReciting = false;
+            currentReciteIndex = 0;
+            updateRecitationDisplay();
+        }
+
+        function updateRecitationDisplay() {
+            if (currentReciteIndex >= POEM_DATA.content.length) { return; }
+            const lineNum = currentReciteIndex + 1;
+            const lineText = POEM_DATA.content[currentReciteIndex];
+            currentReciteLine.textContent = lineNum;
+
+            if (isReciting) {
+                recitePrompt.innerHTML = `<span class="text-blue-600" style="font-size: 22px;">🎤 请说出第${lineNum}句诗</span>`;
+                recitePrompt.classList.add('bg-blue-50', 'p-4', 'rounded-xl');
+            } else {
+                recitePrompt.textContent = lineText;
+                recitePrompt.classList.remove('bg-blue-50', 'p-4', 'rounded-xl');
+            }
+
+            characterDisplay.innerHTML = '';
+            if (!isReciting) {
+                for (const char of lineText) {
+                    const span = document.createElement('span');
+                    span.className = 'recite-char';
+                    span.textContent = char;
+                    characterDisplay.appendChild(span);
+                }
+            } else {
+                for (const char of lineText) {
+                    const span = document.createElement('span');
+                    span.className = 'recite-char';
+                    span.textContent = '?';
+                    span.style.background = '#E8F0FE';
+                    span.style.border = '2px dashed #7A9CBF';
+                    span.style.color = '#7A9CBF';
+                    characterDisplay.appendChild(span);
+                }
+            }
+
+            document.querySelectorAll('.poem-line').forEach((el, i) => {
+                el.classList.remove('active', 'completed');
+                if (i < currentReciteIndex) el.classList.add('completed');
+                else if (i === currentReciteIndex) el.classList.add('active');
+            });
+            reciteStatus.textContent = isReciting ? `正在背诵第${lineNum}句` : `第${lineNum}句`;
+            reciteHintArea.classList.add('hidden');
+        }
+
+        function startRecitation() {
+            isReciting = true;
+            currentReciteIndex = 0;
+            updateRecitationDisplay();
+            reciteModule.scrollIntoView({ behavior: 'smooth' });
+            const lineNum = currentReciteIndex + 1;
+            addAIMessage(`好！现在我们开始背诵！请说出第${lineNum}句诗，加油！🎤`, 'thinking');
+            speakText(`好！现在我们开始背诵！请说出第${lineNum}句诗，加油！`, () => {
+                setTimeout(() => {
+                    startListening();
+                }, 300);
+            });
+            startReciteTimer();
+        }
+
+        function startReciteTimer() {
+            clearTimeout(reciteTimeout);
+            reciteTimeout = setTimeout(() => { if (!isListening) giveReciteHint(); }, 10000);
+        }
+
+        function giveReciteHint() {
+            const hints = reciteHints[currentReciteIndex];
+            const hint = hints[Math.floor(Math.random() * hints.length)];
+            reciteHintArea.classList.remove('hidden');
+            reciteHintText.textContent = hint;
+            addAIMessage(`提示：${hint}`, 'thinking');
+            speakText(hint);
+            startReciteTimer();
+        }
+
+        function checkRecitation(text) {
+            if (currentReciteIndex >= POEM_DATA.content.length) return false;
+            const targetLine = POEM_DATA.content[currentReciteIndex];
+            let matchCount = 0;
+            for (const char of targetLine.split('')) { if (text.includes(char)) matchCount++; }
+            if (matchCount >= targetLine.length * 0.6) { handleCorrectRecitation(); return true; }
+            if (text.length > 5 && matchCount < 2) { handleWrongRecitation(); return true; }
+            return false;
+        }
+
+        function handleCorrectRecitation() {
+            clearTimeout(reciteTimeout);
+            const chars = characterDisplay.querySelectorAll('.recite-char');
+            const lineText = POEM_DATA.content[currentReciteIndex];
+            const lineNum = currentReciteIndex + 1;
+
+            chars.forEach((c, i) => {
+                c.textContent = lineText[i];
+                c.classList.add('correct');
+            });
+
+            addAIMessage(`太棒了！第${lineNum}句背对了！`, 'thinking');
+            speakText(`太棒了！第${lineNum}句背对了！`);
+            learnedLines = Math.max(learnedLines, lineNum);
+            updateProgress();
+
+            setTimeout(() => {
+                currentReciteIndex++;
+                if (currentReciteIndex < POEM_DATA.content.length) {
+                    isReciting = true;
+                    updateRecitationDisplay();
+                    const nextLineNum = currentReciteIndex + 1;
+                    addAIMessage(`第${lineNum}句完成！接下来是第${nextLineNum}句，准备好了吗？🎤`, 'thinking');
+                    speakText(`第${lineNum}句完成！接下来是第${nextLineNum}句，准备好了吗？`, () => {
+                        setTimeout(() => {
+                            startListening();
+                        }, 6000);
+                    });
+                    startReciteTimer();
+                } else {
+                    isReciting = false;
+                    updateRecitationDisplay();
+                    reciteStatus.textContent = '已全部背完！';
+                    addAIMessage(`恭喜你！整首诗都背下来了！你太厉害了！🌟 想再练一遍就点击「开始背诵」吧！`, 'thinking');
+                    speakText(`恭喜你！整首诗都背下来了！你太厉害了！想再练一遍就点击开始背诵吧！`);
+                }
+            }, 1500);
+        }
+
+        function handleWrongRecitation() {
+            clearTimeout(reciteTimeout);
+            const chars = characterDisplay.querySelectorAll('.recite-char');
+            const lineText = POEM_DATA.content[currentReciteIndex];
+            chars.forEach((c, i) => {
+                c.textContent = lineText[i];
+                c.classList.add('wrong');
+            });
+            setTimeout(() => {
+                chars.forEach((c, i) => {
+                    c.textContent = '?';
+                    c.classList.remove('wrong');
+                    c.style.background = '#E8F0FE';
+                    c.style.border = '2px dashed #7A9CBF';
+                    c.style.color = '#7A9CBF';
+                });
+            }, 800);
+            const hint = reciteHints[currentReciteIndex][0];
+            addAIMessage(`不太对哦，再想想。提示：${hint}`, 'warning');
+            speakText(`不太对哦，再想想。提示：${hint}`);
+            startReciteTimer();
+        }
+
+        function skipCurrentLine() {
+            clearTimeout(reciteTimeout);
+            const skippedLineNum = currentReciteIndex + 1;
+            const skippedLine = POEM_DATA.content[currentReciteIndex];
+
+            characterDisplay.innerHTML = '';
+            for (const char of skippedLine) {
+                const span = document.createElement('span');
+                span.className = 'recite-char';
+                span.textContent = char;
+                span.style.background = '#FFF3E0';
+                span.style.border = '2px solid #FFB74D';
+                characterDisplay.appendChild(span);
+            }
+
+            addAIMessage(`好的，第${skippedLineNum}句是：「${skippedLine}」。我们继续下一句吧！`, 'thinking');
+            speakText(`好的，第${skippedLineNum}句是：${skippedLine}。我们继续下一句吧！`);
+
+            setTimeout(() => {
+                currentReciteIndex++;
+                if (currentReciteIndex < POEM_DATA.content.length) {
+                    isReciting = true;
+                    updateRecitationDisplay();
+                    const nextLineNum = currentReciteIndex + 1;
+                    addAIMessage(`第${skippedLineNum}句学完了！接下来是第${nextLineNum}句，准备好了吗？🎤`, 'thinking');
+                    speakText(`第${skippedLineNum}句学完了！接下来是第${nextLineNum}句，准备好了吗？`, () => {
+                        setTimeout(() => {
+                            startListening();
+                        }, 300);
+                    });
+                    startReciteTimer();
+                } else {
+                    isReciting = false;
+                    updateRecitationDisplay();
+                    reciteStatus.textContent = '已学完全诗';
+                    addAIMessage(`你已经学完整首诗了！太棒了！`, 'thinking');
+                    speakText(`你已经学完整首诗了！太棒了！`);
+                }
+            }, 1500);
+        }
+
+        // ==================== 事件绑定 ====================
+        speakButton.addEventListener('click', toggleListening);
+        startCameraBtn.addEventListener('click', startCamera);
+        stopCameraBtn.addEventListener('click', stopCamera);
+        startReciteBtn.addEventListener('click', startRecitation);
+        hintBtn.addEventListener('click', giveReciteHint);
+        skipBtn.addEventListener('click', skipCurrentLine);
+
+        document.getElementById('configBtn').addEventListener('click', () => document.getElementById('configModal').classList.remove('pointer-events-none', 'opacity-0'));
+        document.getElementById('quickReplyBtn').addEventListener('click', () => document.getElementById('quickReplyModal').classList.remove('pointer-events-none', 'opacity-0'));
+        document.getElementById('cancelConfig').addEventListener('click', () => document.getElementById('configModal').classList.add('pointer-events-none', 'opacity-0'));
+        document.getElementById('closeQuickReply').addEventListener('click', () => document.getElementById('quickReplyModal').classList.add('pointer-events-none', 'opacity-0'));
+
+        document.getElementById('saveConfig').addEventListener('click', () => {
+            const mode = document.querySelector('.mode-btn.bg-blue-100')?.dataset.mode || 'local';
+            config.mode = mode;
+            config.backendUrl = document.getElementById('backendUrlInput').value;
+            localStorage.setItem('poetry_config', JSON.stringify(config));
+            document.getElementById('configModal').classList.add('pointer-events-none', 'opacity-0');
+            addAIMessage(`配置已保存！当前模式：${mode === 'deepseek' ? 'DeepSeek AI' : '本地AI'}`);
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('bg-blue-100', 'text-blue-700'); b.classList.add('bg-[var(--stone)]', 'text-[var(--text-medium)]'); });
+                btn.classList.remove('bg-[var(--stone)]', 'text-[var(--text-medium)]');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+            });
+        });
+
+        document.querySelectorAll('.quick-reply-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleUserInput(btn.textContent);
+                document.getElementById('quickReplyModal').classList.add('pointer-events-none', 'opacity-0');
+            });
+        });
+
+        document.querySelectorAll('.poem-line').forEach(el => {
+            el.addEventListener('click', () => {
+                const lineIndex = parseInt(el.dataset.line);
+                if (isReciting) {
+                    addAIMessage(`现在正在背诵中！先完成当前挑战吧，或者点击「跳过这句」换下一句！`, 'warning');
+                    speakText(`现在正在背诵中！先完成当前挑战吧，或者点击跳过这句换下一句！`);
+                    return;
+                }
+                learnedLines = Math.max(learnedLines, lineIndex + 1);
+                updateProgress();
+                addAIMessage(`这是第${lineIndex + 1}句：${POEM_DATA.content[lineIndex]}`);
+                speakText(`这是第${lineIndex + 1}句：${POEM_DATA.content[lineIndex]}`);
+            });
+        });
+
+        initRecitation();
+        if (localStorage.getItem('learnedLines')) {
+            learnedLines = parseInt(localStorage.getItem('learnedLines'));
+            updateProgress();
+            document.querySelectorAll('.poem-line').forEach((el, i) => {
+                if (i < learnedLines) el.classList.add('completed');
+            });
+        }
+        if (localStorage.getItem('poetry_config')) { config = JSON.parse(localStorage.getItem('poetry_config')); document.getElementById('backendUrlInput').value = config.backendUrl || 'http://localhost:8000'; }
+    </script>
+</body>
+</html>

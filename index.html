@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI古诗小老师 - 泊船瓜洲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B6F4E;
+            --gold: #D4AF37;
+            --stone: #F5F0E8;
+            --stone-dark: #EBE5DB;
+            --text-dark: #2D2418;
+            --text-medium: #5B4738;
+            --text-light: #8B7B6B;
+            --bg-cream: #FDF8F3;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-cream); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #6B5545 100%);
+            color: white; border-radius: 16px; padding: 16px 32px;
+            font-size: 20px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 16px rgba(139,119,89,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,119,89,0.4); }
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%);
+            color: var(--text-medium); border-radius: 16px; padding: 14px 28px;
+            font-size: 18px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .feature-card {
+            background: white; border-radius: 20px; padding: 32px;
+            box-shadow: 0 4px 20px rgba(139,119,89,0.15);
+            transition: all 0.3s; cursor: pointer;
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(139,119,89,0.25); }
+        .logo-bg { background: linear-gradient(135deg, var(--primary) 0%, #5B4738 100%); }
+        .input-field {
+            width: 100%; border: 2px solid var(--stone-dark); border-radius: 12px;
+            padding: 14px 18px; font-size: 18px; transition: all 0.3s;
+        }
+        .input-field:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,0.2); }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full text-center">
+            <div class="logo-bg w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span class="text-5xl">📚</span>
+            </div>
+            <h1 class="text-3xl font-bold text-[var(--text-dark)] mb-2">AI古诗小老师</h1>
+            <p class="text-[var(--text-light)] mb-8" style="font-size: 18px;">泊船瓜洲 - 王安石</p>
+            
+            <div class="mb-6">
+                <input type="text" id="studentName" class="input-field mb-4" placeholder="请输入你的姓名" style="font-size: 18px;">
+                <input type="text" id="studentId" class="input-field" placeholder="请输入学号（可选）" style="font-size: 18px;">
+            </div>
+            
+            <button id="startBtn" class="btn-primary w-full mb-4">开始学习</button>
+            <button id="viewRecordsBtn" class="btn-secondary w-full">查看学习记录</button>
+        </div>
+    </div>
+
+    <div id="mainScreen" class="min-h-screen hidden">
+        <header class="bg-white shadow-md p-4">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="logo-bg w-12 h-12 rounded-full flex items-center justify-center">
+                        <span class="text-2xl">📚</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-[var(--text-dark)]">AI古诗小老师</h1>
+                        <p class="text-[var(--text-light)]" style="font-size: 14px;">欢迎，<span id="displayName"></span></p>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="btn-secondary" style="font-size: 16px; padding: 10px 20px;">切换用户</button>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto p-6">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-[var(--text-dark)] mb-2">《泊船瓜洲》</h2>
+                <p class="text-[var(--text-light)]" style="font-size: 18px;">【宋】王安石</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="feature-card" onclick="startChatLearning()">
+                    <div class="text-5xl mb-4">📖</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">诗词学习</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">学习诗句意思、写作手法、诗人情感</p>
+                </div>
+
+                <div class="feature-card" onclick="startRecitation()">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">背诵挑战</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">AI陪练，自适应难度，随时检验</p>
+                </div>
+
+                <div class="feature-card" onclick="startGame()">
+                    <div class="text-5xl mb-4">🎮</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">趣味游戏</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">选字组句、诗词配对等多种玩法</p>
+                </div>
+
+                <div class="feature-card" onclick="viewProgress()">
+                    <div class="text-5xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">学习报告</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">查看学习进度、成绩统计</p>
+                </div>
+
+                <div class="feature-card" onclick="startCameraGame()">
+                    <div class="text-5xl mb-4">📷</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">摄像头互动</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">用手势或动作玩诗词游戏</p>
+                </div>
+
+                <div class="feature-card" onclick="viewRecords()">
+                    <div class="text-5xl mb-4">📜</div>
+                    <h3 class="text-xl font-bold text-[var(--text-dark)] mb-2">历史记录</h3>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">查看之前的学习记录</p>
+                </div>
+            </div>
+
+            <div id="poemDisplay" class="bg-white rounded-2xl p-8 shadow-lg mb-8">
+                <div class="text-center mb-6">
+                    <p class="text-2xl text-[var(--text-dark)] leading-loose" style="font-family: serif;">
+                        京口瓜洲一水间<br>
+                        钟山只隔数重山<br>
+                        春风又绿江南岸<br>
+                        明月何时照我还？
+                    </p>
+                </div>
+                <div class="text-center text-[var(--text-light)]" style="font-size: 16px;">
+                    <p>诗意：诗人泊船瓜洲，望着对岸的家乡钟山，春风又吹绿了江南两岸，明月啊，你什么时候能照着我回家呢？</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="recordsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[80vh] overflow-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-[var(--text-dark)]">学习记录</h2>
+                <button onclick="closeRecordsModal()" class="text-3xl text-[var(--text-light)] hover:text-[var(--text-dark)]">&times;</button>
+            </div>
+            <div id="recordsContent" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentStudent = null;
+
+        document.getElementById('startBtn').addEventListener('click', startLearning);
+        document.getElementById('viewRecordsBtn').addEventListener('click', viewRecords);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        function getStudentKey() {
+            const savedStudent = localStorage.getItem('currentStudent');
+            if (savedStudent) return savedStudent;
+
+            const name = document.getElementById('studentName').value.trim();
+            const id = document.getElementById('studentId').value.trim();
+            if (!name) {
+                alert('请输入姓名！');
+                return null;
+            }
+            return id ? `${name}_${id}` : name;
+        }
+
+        function startLearning() {
+            const key = getStudentKey();
+            if (!key) return;
+            localStorage.setItem('currentStudent', key);
+            const name = localStorage.getItem('currentStudentName') || key.split('_')[0];
+            document.getElementById('displayName').textContent = name;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+        }
+
+        function startChatLearning() {
+            const key = localStorage.getItem('currentStudent');
+            if (!key) {
+                alert('请先登录！');
+                return;
+            }
+            window.location.href = 'index_optimized.html';
+        }
+
+        function startRecitation() {
+            const key = getStudentKey();
+            if (!key) return;
+            localStorage.setItem('currentStudent', key);
+            window.location.href = 'recite.html';
+        }
+
+        function startGame() {
+            const key = getStudentKey();
+            if (!key) return;
+            localStorage.setItem('currentStudent', key);
+            window.location.href = 'game.html';
+        }
+
+        function startCameraGame() {
+            const key = getStudentKey();
+            if (!key) return;
+            localStorage.setItem('currentStudent', key);
+            window.location.href = 'camera.html';
+        }
+
+        function viewProgress() {
+            const key = getStudentKey();
+            if (!key) return;
+            localStorage.setItem('currentStudent', key);
+            window.location.href = 'progress.html';
+        }
+
+        function viewRecords() {
+            const modal = document.getElementById('recordsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const content = document.getElementById('recordsContent');
+
+            try {
+                const response = new XMLHttpRequest();
+                response.open('GET', 'http://localhost:8888/chugu/', true);
+                response.onload = function() {
+                    if (response.status === 200) {
+                        content.innerHTML = '<p class="text-center text-[var(--text-light)]">加载中...</p>';
+                    } else {
+                        content.innerHTML = '<p class="text-center text-[var(--text-light)]">暂无学习记录</p>';
+                    }
+                };
+                response.onerror = function() {
+                    content.innerHTML = '<p class="text-center text-[var(--text-light)]">暂无学习记录（服务器未启动）</p><p class="text-center text-[var(--text-light)] mt-2" style="font-size: 14px;">请先启动前端服务器：python -m http.server 8888</p>';
+                };
+                response.send();
+            } catch (e) {
+                content.innerHTML = '<p class="text-center text-[var(--text-light)]">暂无学习记录</p>';
+            }
+        }
+
+        function closeRecordsModal() {
+            const modal = document.getElementById('recordsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function loadAndShowProgress(key) {
+            alert('学习报告功能开发中...\n学生：' + key);
+        }
+
+        function logout() {
+            currentStudent = null;
+            localStorage.removeItem('currentStudent');
+            localStorage.removeItem('currentStudentName');
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentId').value = '';
+            window.location.href = 'login.html';
+        }
+
+        const savedStudent = localStorage.getItem('currentStudent');
+        if (savedStudent) {
+            const savedName = localStorage.getItem('currentStudentName');
+            if (savedName) {
+                document.getElementById('displayName').textContent = savedName;
+            } else {
+                const parts = savedStudent.split('_');
+                document.getElementById('displayName').textContent = parts[0];
+            }
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

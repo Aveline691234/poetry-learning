@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 - AI古诗学习系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B7355;
+            --gold: #C9A96E;
+            --stone: #F9F6F1;
+            --stone-dark: #EBE5DB;
+            --text-dark: #4A3F35;
+            --text-medium: #6B5545;
+            --text-light: #9B8365;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #F5F0FA 0%, #EDE7F6 100%);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+            color: white;
+            padding: 20px 32px;
+            box-shadow: 0 4px 16px rgba(109,40,217,0.3);
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .stat-card {
+            background: linear-gradient(145deg, #FFFFFF 0%, #F8F5FF 100%);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #E9D5FF;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #7C3AED;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        .student-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 120px 100px 100px;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+            transition: background 0.2s;
+        }
+        .student-row:hover {
+            background: #F9FAFB;
+        }
+        .student-row.header-row {
+            background: #F3F4F6;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-radius: 8px 8px 0 0;
+        }
+        .progress-bar {
+            height: 8px;
+            background: var(--stone);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8B5CF6, #A78BFA);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-excellent { background: #D1FAE5; color: #059669; }
+        .badge-good { background: #DBEAFE; color: #2563EB; }
+        .badge-learning { background: #FEF3C7; color: #D97706; }
+        .badge-none { background: #FEE2E2; color: #DC2626; }
+        @media (max-width: 900px) {
+            .student-row {
+                grid-template-columns: 80px 1fr 80px 80px;
+            }
+            .student-row > *:nth-child(5),
+            .student-row > *:nth-child(6) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold">👨‍🏫 教师端</h1>
+            <p class="text-purple-200 mt-1">《泊船瓜洲》学习数据概览</p>
+        </div>
+        <button onclick="goBack()" class="bg-white/20 hover:bg-white/30 px-6 py-2 rounded-xl transition-colors">
+            ← 返回登录
+        </button>
+    </div>
+
+    <div class="p-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+                <div class="stat-number" id="totalStudents">0</div>
+                <div class="stat-label">学生总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgProgress">0%</div>
+                <div class="stat-label">平均进度</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgAccuracy">0%</div>
+                <div class="stat-label">平均正确率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalRecites">0</div>
+                <div class="stat-label">背诵总次数</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-[var(--text-dark)]">📊 学生学习详情</h2>
+                <button onclick="loadData()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    🔄 刷新数据
+                </button>
+            </div>
+
+            <div class="student-row header-row">
+                <div>学号</div>
+                <div>姓名</div>
+                <div>学习进度</div>
+                <div>正确率</div>
+                <div>背诵次数</div>
+                <div>状态</div>
+            </div>
+            <div id="studentList">
+                <div class="text-center py-8 text-gray-400">
+                    <div class="text-4xl mb-2">📭</div>
+                    <div>暂无学生数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = '';  // 使用相对路径，兼容 Vercel 部署
+
+        async function loadData() {
+            const listEl = document.getElementById('studentList');
+            listEl.innerHTML = '<div class="text-center py-8 text-gray-400"><div class="text-4xl mb-2 animate-spin">⏳</div><div>加载中...</div></div>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/progress?all=1`);
+                if (!response.ok) throw new Error('Failed to fetch');
+
+                const data = await response.json();
+                const students = data.students || [];
+
+                if (students.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <div class="text-4xl mb-2">📭</div>
+                            <div>暂无学生数据</div>
+                            <div class="text-sm mt-1">学生登录学习后即可查看</div>
+                        </div>
+                    `;
+                    updateStats(students);
+                    return;
+                }
+
+                updateStats(students);
+
+                listEl.innerHTML = students.map(s => {
+                    const progress = calculateProgress(s.progress);
+                    const accuracy = calculateAccuracy(s.progress);
+                    const status = getStatus(progress, accuracy);
+                    const badge = getBadge(status);
+
+                    return `
+                        <div class="student-row">
+                            <div class="font-medium text-gray-700">${s.studentId}</div>
+                            <div class="font-bold text-[var(--text-dark)]">${s.name || '未知'}</div>
+                            <div>
+                                <div class="progress-bar mb-1">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500">${progress}%</div>
+                            </div>
+                            <div class="font-bold ${accuracy >= 80 ? 'text-green-600' : accuracy >= 50 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${accuracy}%
+                            </div>
+                            <div class="text-gray-600">${s.progress?.recitationCount || 0}次</div>
+                            <div><span class="badge ${badge}">${status}</span></div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Load data error:', error);
+                listEl.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <div class="text-4xl mb-2">❌</div>
+                        <div>加载失败</div>
+                        <div class="text-sm mt-1">请确保后端服务已启动</div>
+                    </div>
+                `;
+            }
+        }
+
+        function calculateProgress(progress) {
+            if (!progress) return 0;
+            const learned = progress.learnedLines || 0;
+            return Math.round((learned / 4) * 100);
+        }
+
+        function calculateAccuracy(progress) {
+            if (!progress || !progress.recitationCount) return 0;
+            const correct = progress.correctCount || 0;
+            const total = progress.recitationCount || 1;
+            return Math.round((correct / Math.max(total, 1)) * 100);
+        }
+
+        function getStatus(progress, accuracy) {
+            if (progress >= 100 && accuracy >= 80) return '优秀';
+            if (progress >= 100) return '已完成';
+            if (progress >= 50) return '学习中';
+            if (progress > 0) return '起步';
+            return '未开始';
+        }
+
+        function getBadge(status) {
+            switch(status) {
+                case '优秀': return 'badge-excellent';
+                case '已完成': return 'badge-good';
+                case '学习中': return 'badge-learning';
+                case '起步': return 'badge-learning';
+                default: return 'badge-none';
+            }
+        }
+
+        function updateStats(students) {
+            const total = students.length;
+            let totalProgress = 0;
+            let totalAccuracy = 0;
+            let totalRecites = 0;
+
+            students.forEach(s => {
+                totalProgress += calculateProgress(s.progress);
+                totalAccuracy += calculateAccuracy(s.progress);
+                totalRecites += s.progress?.recitationCount || 0;
+            });
+
+            document.getElementById('totalStudents').textContent = total;
+            document.getElementById('avgProgress').textContent = total > 0 ? Math.round(totalProgress / total) + '%' : '0%';
+            document.getElementById('avgAccuracy').textContent = total > 0 ? Math.round(totalAccuracy / total) + '%' : '0%';
+            document.getElementById('totalRecites').textContent = totalRecites;
+        }
+
+        function goBack() {
+            window.location.href = 'login.html';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

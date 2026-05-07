@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味游戏 - AI古诗小老师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B6F4E;
+            --gold: #D4AF37;
+            --stone: #F5F0E8;
+            --stone-dark: #EBE5DB;
+            --text-dark: #2D2418;
+            --text-medium: #5B4738;
+            --text-light: #8B7B6B;
+            --bg-cream: #FDF8F3;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-cream); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #6B5545 100%);
+            color: white; border-radius: 16px; padding: 16px 32px;
+            font-size: 20px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 16px rgba(139,119,89,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,119,89,0.4); }
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%);
+            color: var(--text-medium); border-radius: 12px; padding: 12px 24px;
+            font-size: 18px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); }
+        .game-card { background: white; border-radius: 20px; padding: 32px; box-shadow: 0 4px 20px rgba(139,119,89,0.15); }
+        .word-btn {
+            background: white; border: 3px solid var(--gold); color: var(--text-dark);
+            padding: 16px 24px; border-radius: 16px; font-size: 24px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s; text-align: center;
+        }
+        .word-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(212,175,55,0.3); }
+        .word-btn.selected { background: var(--gold); border-color: var(--primary); color: white; }
+        .word-btn.correct { background: #10B981; border-color: #059669; color: white; }
+        .word-btn.wrong { background: #EF4444; border-color: #DC2626; color: white; }
+        .drop-zone {
+            min-height: 60px; background: rgba(212,175,55,0.1);
+            border: 3px dashed var(--gold); border-radius: 12px;
+            display: flex; flex-wrap: wrap; gap: 8px;
+            padding: 12px; align-items: center;
+        }
+        .placed-word {
+            background: var(--gold); color: white; padding: 8px 16px;
+            border-radius: 8px; font-size: 20px; font-weight: bold;
+            margin: 4px; position: relative;
+        }
+        .remove-btn {
+            position: absolute; top: -8px; right: -8px;
+            background: #EF4444; color: white; border-radius: 50%;
+            width: 24px; height: 24px; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[#5B4738] rounded-full flex items-center justify-center">
+                    <span class="text-2xl">🎮</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-[var(--text-dark)]">趣味游戏</h1>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">《泊船瓜洲》 - 选词组句</p>
+                </div>
+            </div>
+            <button onclick="goHome()" class="btn-secondary">🏠 返回主页</button>
+        </header>
+
+        <div class="game-card mb-6">
+            <div class="text-center mb-6">
+                <h2 class="text-xl font-bold text-[var(--text-dark)] mb-2">📝 选词组句</h2>
+                <p class="text-[var(--text-light)]" style="font-size: 16px;">从下方选择正确的字，组成完整的诗句</p>
+            </div>
+
+            <div class="mb-6">
+                <p class="text-center text-[var(--text-medium)] mb-4" style="font-size: 18px;">第 <span id="currentRound">1</span>/4 句</p>
+                <div class="drop-zone" id="dropZone">
+                    <span class="text-[var(--text-light)]">点击下方的字放入这里...</span>
+                </div>
+            </div>
+
+            <div id="wordButtons" class="grid grid-cols-4 md:grid-cols-7 gap-3"></div>
+
+            <div class="mt-4 flex justify-center gap-4 mb-4">
+                <label class="text-[var(--text-medium)] text-sm mr-2">🔊 选择语音：</label>
+                <select id="voiceSelect" class="px-3 py-2 rounded-lg border border-[var(--stone-dark)] bg-white text-[var(--text-dark)]">
+                    <option value="auto">自动选择最佳语音</option>
+                </select>
+                <span id="voiceStatus" class="text-[var(--text-light)] text-xs ml-2"></span>
+            </div>
+
+            <div class="mt-6 flex justify-center gap-4">
+                <button onclick="checkAnswer()" class="btn-primary">✅ 确认答案</button>
+                <button onclick="clearSelection()" class="btn-secondary">🔄 重置</button>
+                <button onclick="showHint()" class="btn-secondary">💡 提示</button>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-4xl font-bold text-[var(--primary)]" id="score">0</div>
+                    <div class="text-[var(--text-light)]" style="font-size: 14px;">得分</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-green-500" id="correct">0</div>
+                    <div class="text-[var(--text-light)]" style="font-size: 14px;">正确</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-amber-500" id="hints">0</div>
+                    <div class="text-[var(--text-light)]" style="font-size: 14px;">提示</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectVoice() {
+            const voices = window.speechSynthesis?.getVoices() || [];
+            if (voices.length === 0) return null;
+
+            const xiaoxiaoVoice = voices.find(v =>
+                v.lang === 'zh-CN' && v.name.includes('Xiaoxiao')
+            );
+            if (xiaoxiaoVoice) return xiaoxiaoVoice;
+
+            const yaoyaoVoice = voices.find(v =>
+                v.lang === 'zh-CN' && v.name.includes('Yaoyao')
+            );
+            if (yaoyaoVoice) return yaoyaoVoice;
+
+            const lunaVoice = voices.find(v =>
+                v.lang === 'zh-CN' && v.name.includes('Luna')
+            );
+            if (lunaVoice) return lunaVoice;
+
+            const meimeiVoice = voices.find(v =>
+                v.lang === 'zh-CN' && v.name.includes('Meimei')
+            );
+            if (meimeiVoice) return meimeiVoice;
+
+            const zhFemale = voices.find(v =>
+                v.lang.includes('zh') && v.name.includes('Female')
+            );
+            if (zhFemale) return zhFemale;
+
+            const zhVoice = voices.find(v => v.lang.includes('zh'));
+            if (zhVoice) return zhVoice;
+
+            return voices[0];
+        }
+
+        let voiceConfig = { index: undefined, name: 'auto' };
+        let voicesLoaded = false;
+
+        function loadVoices() {
+            if (!window.speechSynthesis) return;
+
+            const voiceSelect = document.getElementById('voiceSelect');
+            const voiceStatus = document.getElementById('voiceStatus');
+            if (!voiceSelect) return;
+
+            const voices = window.speechSynthesis.getVoices() || [];
+
+            if (voices.length === 0) {
+                if (voiceStatus) voiceStatus.textContent = '加载中...';
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+                return;
+            }
+
+            voicesLoaded = true;
+
+            voiceSelect.innerHTML = '<option value="auto">自动选择最佳语音</option>';
+
+            const zhVoices = voices.filter(v => v.lang.includes('zh'));
+            const otherVoices = voices.filter(v => !v.lang.includes('zh'));
+
+            zhVoices.forEach((voice) => {
+                const actualIndex = voices.indexOf(voice);
+                const option = document.createElement('option');
+                option.value = actualIndex;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+
+            if (otherVoices.length > 0) {
+                const divider = document.createElement('option');
+                divider.disabled = true;
+                divider.textContent = '--- 其他语音 ---';
+                voiceSelect.appendChild(divider);
+
+                otherVoices.forEach((voice) => {
+                    const actualIndex = voices.indexOf(voice);
+                    const option = document.createElement('option');
+                    option.value = actualIndex;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+            }
+
+            if (voiceConfig.index !== undefined) {
+                voiceSelect.value = voiceConfig.index;
+            }
+
+            if (voiceStatus) {
+                const selectedVoice = voices[voiceSelect.value];
+                if (selectedVoice) {
+                    voiceStatus.textContent = `当前: ${selectedVoice.name}`;
+                }
+            }
+        }
+
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+
+            window.speechSynthesis.cancel();
+
+            const cleanText = text.replace(/[**`~]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.85;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            let selectedVoice = null;
+
+            if (voiceConfig.index !== undefined && voices[voiceConfig.index]) {
+                selectedVoice = voices[voiceConfig.index];
+            } else {
+                selectedVoice = selectVoice();
+            }
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                utterance.lang = selectedVoice.lang;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if (window.speechSynthesis) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+
+            const voiceSelect = document.getElementById('voiceSelect');
+            if (voiceSelect) {
+                voiceSelect.addEventListener('change', (e) => {
+                    const index = e.target.value;
+                    if (index === 'auto') {
+                        voiceConfig.index = undefined;
+                        voiceConfig.name = 'auto';
+                    } else {
+                        voiceConfig.index = parseInt(index);
+                        const voices = window.speechSynthesis.getVoices();
+                        if (voices[index]) {
+                            voiceConfig.name = voices[index].name;
+                        }
+                    }
+                });
+            }
+        }
+
+        const poemLines = [
+            "京口瓜洲一水间",
+            "钟山只隔数重山",
+            "春风又绿江南岸",
+            "明月何时照我还"
+        ];
+
+        let currentRound = 0;
+        let score = 0;
+        let correctCount = 0;
+        let hintCount = 0;
+        let selectedWords = [];
+
+        function init() {
+            setTimeout(() => {
+                speakText('欢迎来到趣味游戏！请选择下方的字组成诗句。');
+            }, 1000);
+            startRound();
+        }
+
+        function startRound() {
+            const line = poemLines[currentRound];
+            const shuffled = shuffleArray(line.split(''));
+            
+            const wordButtons = document.getElementById('wordButtons');
+            wordButtons.innerHTML = '';
+            
+            shuffled.forEach((word, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'word-btn';
+                btn.textContent = word;
+                btn.dataset.index = index;
+                btn.addEventListener('click', () => selectWord(btn, word));
+                wordButtons.appendChild(btn);
+            });
+            
+            document.getElementById('currentRound').textContent = currentRound + 1;
+            document.getElementById('dropZone').innerHTML = '<span class="text-[var(--text-light)]">点击下方的字放入这里...</span>';
+            selectedWords = [];
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function selectWord(btn, word) {
+            btn.classList.add('selected');
+            btn.disabled = true;
+            selectedWords.push(word);
+            updateDropZone();
+        }
+
+        function updateDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            
+            if (selectedWords.length === 0) {
+                dropZone.innerHTML = '<span class="text-[var(--text-light)]">点击下方的字放入这里...</span>';
+                return;
+            }
+            
+            dropZone.innerHTML = selectedWords.map((word, index) => `
+                <div class="placed-word">
+                    ${word}
+                    <span class="remove-btn" onclick="removeWord(${index})">×</span>
+                </div>
+            `).join('');
+        }
+
+        function removeWord(index) {
+            const word = selectedWords[index];
+            selectedWords.splice(index, 1);
+            
+            const buttons = document.querySelectorAll('.word-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent === word && btn.disabled) {
+                    btn.classList.remove('selected');
+                    btn.disabled = false;
+                }
+            });
+            
+            updateDropZone();
+        }
+
+        function clearSelection() {
+            selectedWords = [];
+            const buttons = document.querySelectorAll('.word-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('selected');
+                btn.disabled = false;
+            });
+            updateDropZone();
+        }
+
+        function showHint() {
+            hintCount++;
+            document.getElementById('hints').textContent = hintCount;
+            
+            const line = poemLines[currentRound];
+            const currentLength = selectedWords.length;
+            
+            if (currentLength < line.length) {
+                const hintWord = line[currentLength];
+                alert(`提示：第${currentLength + 1}个字是「${hintWord}」`);
+            }
+        }
+
+        function checkAnswer() {
+            const line = poemLines[currentRound];
+            const answer = selectedWords.join('');
+            
+            const buttons = document.querySelectorAll('.word-btn');
+            
+            if (answer === line) {
+                buttons.forEach((btn, index) => {
+                    btn.classList.add('correct');
+                    btn.disabled = true;
+                });
+                score += 100;
+                correctCount++;
+                speakText('太棒了！回答正确！');
+                alert('🎉 太棒了！回答正确！');
+            } else {
+                buttons.forEach((btn, index) => {
+                    btn.classList.add('wrong');
+                    btn.disabled = true;
+                });
+                alert(`😅 不对哦！正确答案是「${line}」`);
+            }
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            
+            setTimeout(() => {
+                if (currentRound < poemLines.length - 1) {
+                    currentRound++;
+                    buttons.forEach(btn => {
+                        btn.classList.remove('correct', 'wrong', 'selected');
+                        btn.disabled = false;
+                    });
+                    startRound();
+                } else {
+                    finishGame();
+                }
+            }, 1500);
+        }
+
+        function finishGame() {
+            const accuracy = Math.round((correctCount / poemLines.length) * 100);
+            let message = '';
+            
+            if (accuracy === 100) {
+                message = '🏆 完美！你全部答对了！';
+            } else if (accuracy >= 75) {
+                message = '👍 很棒！继续加油！';
+            } else {
+                message = '💪 不错的尝试，多练习几次就会更好！';
+            }
+            
+            alert(`${message}\n\n游戏结束！\n得分：${score}分\n正确：${correctCount}题\n提示：${hintCount}次\n正确率：${accuracy}%`);
+            goHome();
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习报告 - AI古诗小老师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B6F4E;
+            --gold: #D4AF37;
+            --stone: #F5F0E8;
+            --stone-dark: #EBE5DB;
+            --text-dark: #2D2418;
+            --text-medium: #5B4738;
+            --text-light: #8B7B6B;
+            --bg-cream: #FDF8F3;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-cream); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #6B5545 100%);
+            color: white; border-radius: 16px; padding: 16px 32px;
+            font-size: 20px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 16px rgba(139,119,89,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,119,89,0.4); }
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%);
+            color: var(--text-medium); border-radius: 12px; padding: 12px 24px;
+            font-size: 18px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); }
+        .report-card { background: white; border-radius: 20px; padding: 32px; box-shadow: 0 4px 20px rgba(139,119,89,0.15); }
+        .stat-item {
+            text-align: center; padding: 20px;
+            background: rgba(139,119,89,0.05); border-radius: 16px;
+        }
+        .stat-value { font-size: 48px; font-weight: bold; color: var(--primary); }
+        .stat-label { color: var(--text-light); font-size: 16px; }
+        .progress-ring {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: conic-gradient(var(--gold) 0deg, var(--stone) 0deg);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .progress-ring-inner {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .progress-text { font-size: 24px; font-weight: bold; color: var(--primary); }
+        .progress-label { font-size: 12px; color: var(--text-light); }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[#5B4738] rounded-full flex items-center justify-center">
+                    <span class="text-2xl">📊</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-[var(--text-dark)]">学习报告</h1>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;">《泊船瓜洲》 - 学习进度</p>
+                </div>
+            </div>
+            <button onclick="goHome()" class="btn-secondary">🏠 返回主页</button>
+        </header>
+
+        <div class="report-card mb-6">
+            <div class="text-center mb-6">
+                <h2 class="text-xl font-bold text-[var(--text-dark)] mb-2">👋 欢迎回来，<span id="studentName">同学</span></h2>
+                <p class="text-[var(--text-light)]" style="font-size: 16px;">以下是你的学习情况汇总</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">学习次数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">背诵正确</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">游戏得分</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">学习时长</div>
+                </div>
+            </div>
+
+            <div class="flex justify-center mb-6">
+                <div class="progress-ring">
+                    <div class="progress-ring-inner">
+                        <div class="progress-text">0%</div>
+                        <div class="progress-label">完成度</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-[var(--stone)] rounded-12">
+                    <div>
+                        <div class="font-bold text-[var(--text-dark)]">诗词学习</div>
+                        <div class="text-[var(--text-light)]" style="font-size: 14px;">学习诗句意思、写作手法</div>
+                    </div>
+                    <span class="text-green-500 font-bold">✓ 已完成</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-[var(--stone)] rounded-12">
+                    <div>
+                        <div class="font-bold text-[var(--text-dark)]">背诵挑战</div>
+                        <div class="text-[var(--text-light)]" style="font-size: 14px;">完整背诵全诗</div>
+                    </div>
+                    <span class="text-amber-500 font-bold">○ 进行中</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-[var(--stone)] rounded-12">
+                    <div>
+                        <div class="font-bold text-[var(--text-dark)]">趣味游戏</div>
+                        <div class="text-[var(--text-light)]" style="font-size: 14px;">选词组句练习</div>
+                    </div>
+                    <span class="text-gray-400 font-bold">○ 未开始</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-[var(--stone)] rounded-12">
+                    <div>
+                        <div class="font-bold text-[var(--text-dark)]">摄像头互动</div>
+                        <div class="text-[var(--text-light)]" style="font-size: 14px;">抓字游戏挑战</div>
+                    </div>
+                    <span class="text-gray-400 font-bold">○ 未开始</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-card">
+            <h3 class="font-bold text-[var(--text-dark)] mb-4" style="font-size: 18px;">📝 学习建议</h3>
+            <ul class="space-y-2 text-[var(--text-medium)]" style="font-size: 16px;">
+                <li>• 建议每天背诵5-10分钟，效果更好</li>
+                <li>• 先理解诗意，再背诵会更轻松</li>
+                <li>• 多玩趣味游戏可以加深记忆</li>
+                <li>• 如果觉得难，可以点击提示按钮</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function loadProgress() {
+            const studentKey = localStorage.getItem('currentStudent');
+            if (studentKey) {
+                document.getElementById('studentName').textContent = studentKey.split('_')[0] || '同学';
+                
+                fetch(`/api/progress?key=${studentKey}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.learnedLines) {
+                            const progress = Math.round((data.learnedLines.length / 4) * 100);
+                            document.querySelector('.progress-text').textContent = `${progress}%`;
+                            document.querySelector('.progress-ring').style.background = 
+                                `conic-gradient(var(--gold) ${progress * 3.6}deg, var(--stone) ${progress * 3.6}deg)`;
+                        }
+                        if (data.recitationCount) {
+                            document.querySelectorAll('.stat-value')[0].textContent = data.recitationCount;
+                        }
+                    })
+                    .catch(e => console.log('Failed to load progress'));
+            }
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        window.addEventListener('load', loadProgress);
+    </script>
+</body>
+</html>

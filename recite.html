@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背诵挑战 - AI古诗小老师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B6F4E;
+            --gold: #D4AF37;
+            --stone: #F5F0E8;
+            --stone-dark: #EBE5DB;
+            --text-dark: #2D2418;
+            --text-medium: #5B4738;
+            --text-light: #8B7B6B;
+            --bg-cream: #FDF8F3;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-cream); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #6B5545 100%);
+            color: white; border-radius: 16px; padding: 16px 32px;
+            font-size: 20px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 16px rgba(139,119,89,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,119,89,0.4); }
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%);
+            color: var(--text-medium); border-radius: 12px; padding: 12px 24px;
+            font-size: 18px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); }
+        .poem-card { background: white; border-radius: 20px; padding: 32px; box-shadow: 0 4px 20px rgba(139,119,89,0.15); }
+        .level-btn {
+            border: 3px solid var(--gold);
+            background: white;
+            color: var(--text-dark);
+            padding: 20px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .level-btn:hover {
+            background: rgba(212,175,55,0.1);
+            transform: translateY(-4px);
+        }
+        .progress-ring {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: conic-gradient(var(--gold) 0deg, var(--stone) 0deg);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            margin: 0 auto;
+        }
+        .progress-ring-inner {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .progress-text { font-size: 24px; font-weight: bold; color: var(--primary); }
+        .poem-display {
+            font-size: 28px;
+            line-height: 1.8;
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #FEF3E2 0%, #FDE8C3 100%);
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        .current-line {
+            color: var(--primary);
+            font-weight: bold;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .completed-line { color: #10B981; font-weight: bold; }
+        .waiting-line { color: var(--text-light); }
+        .user-input {
+            font-size: 24px;
+            text-align: center;
+            padding: 16px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 12px;
+            min-height: 60px;
+            background: white;
+            margin: 16px 0;
+        }
+        .feedback {
+            font-size: 20px;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            min-height: 50px;
+        }
+        .feedback-correct { background: #D1FAE5; color: #065F46; }
+        .feedback-wrong { background: #FEE2E2; color: #991B1B; }
+        .feedback-hint { background: #FEF3C7; color: #92400E; }
+        .feedback-thinking { background: #E0F2FE; color: #0369A1; }
+        .status {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-medium);
+            margin-top: 16px;
+        }
+        .status-listening { color: #3B82F6; font-weight: bold; }
+        .status-speaking { color: var(--primary); font-weight: bold; }
+        .wave-indicator {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .wave-indicator span {
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+        .wave-indicator span:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .wave-indicator span:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+        .wave-indicator span:nth-child(3) { height: 24px; animation-delay: 0.2s; }
+        .wave-indicator span:nth-child(4) { height: 16px; animation-delay: 0.3s; }
+        .wave-indicator span:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+        @keyframes wave { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .local-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--stone);
+            color: var(--text-medium);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[#5B4738] rounded-full flex items-center justify-center">
+                    <span class="text-2xl">📖</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-[var(--text-dark)]">背诵挑战</h1>
+                    <p class="text-[var(--text-light)]" style="font-size: 16px;" id="poemInfo">《泊船瓜洲》 - 王安石</p>
+                </div>
+            </div>
+            <button onclick="goHome()" class="btn-secondary">🏠 返回主页</button>
+        </header>
+
+        <div id="loadingScreen" class="poem-card text-center">
+            <div class="text-4xl mb-4">📚</div>
+            <div class="text-xl text-[var(--text-medium)]">正在加载诗词数据...</div>
+        </div>
+
+        <div id="welcomeScreen" class="hidden">
+            <div class="poem-card text-center mb-6">
+                <div class="text-6xl mb-6">🎯</div>
+                <h2 class="text-2xl font-bold text-[var(--text-dark)] mb-4">欢迎来到背诵挑战！</h2>
+                <p class="text-[var(--text-medium)] mb-6" style="font-size: 18px;">选择你的熟练程度，AI老师会引导你完成背诵</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                    <button class="level-btn" onclick="selectLevel(30)">
+                        <div class="text-4xl mb-2">🌱</div>
+                        <div class="font-bold text-lg">初学者</div>
+                        <div class="text-sm text-[var(--text-light)]">约30%熟悉</div>
+                        <div class="text-xs text-[var(--text-light)] mt-2">多提示引导，打好基础</div>
+                    </button>
+                    <button class="level-btn" onclick="selectLevel(70)">
+                        <div class="text-4xl mb-2">🌿</div>
+                        <div class="font-bold text-lg">进阶者</div>
+                        <div class="text-sm text-[var(--text-light)]">约70%熟悉</div>
+                        <div class="text-xs text-[var(--text-light)] mt-2">适当提示，巩固记忆</div>
+                    </button>
+                    <button class="level-btn" onclick="selectLevel(100)">
+                        <div class="text-4xl mb-2">🌳</div>
+                        <div class="font-bold text-lg">熟练者</div>
+                        <div class="text-sm text-[var(--text-light)]">约100%熟悉</div>
+                        <div class="text-xs text-[var(--text-light)] mt-2">自主挑战，检测成果</div>
+                    </button>
+                </div>
+
+                <div id="aiModeIndicator" class="mb-4">
+                    <span id="aiModeBadge" class="local-badge">🤖 本地模式</span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-[var(--text-medium)] text-sm mr-2">🔊 选择语音：</label>
+                    <select id="voiceSelect" class="px-3 py-2 rounded-lg border border-[var(--stone-dark)] bg-white text-[var(--text-dark)]">
+                        <option value="auto">自动选择最佳语音</option>
+                    </select>
+                    <span id="voiceStatus" class="text-[var(--text-light)] text-xs ml-2"></span>
+                </div>
+
+                <div class="bg-amber-50 rounded-xl p-4 max-w-xl mx-auto">
+                    <div class="text-[var(--text-medium)] text-sm mb-2">💡 自动背诵流程说明</div>
+                    <div class="text-[var(--text-light)] text-xs">
+                        全程AI引导，自动听你说 → 自动判断对错 → 自动进入下一句<br>
+                        无需手动点击，完全自动化的背诵练习！
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="reciteScreen" class="hidden">
+            <div class="poem-card mb-6">
+                <div class="text-center mb-6">
+                    <div class="progress-ring">
+                        <div class="progress-ring-inner">
+                            <div class="progress-text" id="progressText">0%</div>
+                            <div style="font-size: 12px; color: var(--text-light);">完成度</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="text-[var(--text-light)]" style="font-size: 16px;">
+                        <span id="modeText" class="font-bold text-[var(--primary)]"></span>
+                    </div>
+                    <div id="currentAiBadge"></div>
+                </div>
+                <div class="text-center mt-2">
+                    <span id="lineIndicator" class="text-[var(--text-medium)]" style="font-size: 14px;"></span>
+                </div>
+            </div>
+
+            <div class="poem-card">
+                <div class="poem-display" id="poemDisplay"></div>
+
+                <div class="user-input" id="userInput">
+                    <span class="wave-indicator">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </span>
+                    正在聆听...
+                </div>
+
+                <div class="feedback" id="feedback" style="display: none;"></div>
+
+                <div class="status" id="status">
+                    <span class="wave-indicator">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </span>
+                    准备开始...
+                </div>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="hidden poem-card text-center">
+            <div class="text-6xl mb-6" id="resultEmoji">🎉</div>
+            <h2 class="text-2xl font-bold text-[var(--text-dark)] mb-4" id="resultTitle">恭喜完成背诵！</h2>
+
+            <div class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-6">
+                <div class="bg-green-50 rounded-xl p-4">
+                    <div class="text-2xl font-bold text-green-600" id="finalCorrect">0</div>
+                    <div class="text-sm text-green-600">正确</div>
+                </div>
+                <div class="bg-red-50 rounded-xl p-4">
+                    <div class="text-2xl font-bold text-red-600" id="finalWrong">0</div>
+                    <div class="text-sm text-red-600">错误</div>
+                </div>
+                <div class="bg-yellow-50 rounded-xl p-4">
+                    <div class="text-2xl font-bold text-yellow-600" id="finalHint">0</div>
+                    <div class="text-sm text-yellow-600">提示</div>
+                </div>
+            </div>
+
+            <div class="text-[var(--text-medium)] mb-6" style="font-size: 18px;">
+                正确率：<span class="font-bold text-[var(--primary)]" id="finalRate">0%</span>
+            </div>
+
+            <div class="bg-blue-50 rounded-xl p-4 mb-8 max-w-md mx-auto">
+                <div class="text-[var(--text-medium)]" id="encouragementText"></div>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button onclick="restartRecite()" class="btn-secondary">🔄 再来一次</button>
+                <button onclick="goHome()" class="btn-primary">🏠 返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CORPUS = {
+            title: "泊船瓜洲",
+            author: "王安石",
+            dynasty: "北宋",
+            lines: [
+                {
+                    text: "京口瓜洲一水间",
+                    analysis: "瓜洲和京口，只隔着一条长江。",
+                    hints: [
+                        "描写的是江边的景色",
+                        "第一个字是'京'",
+                        "七个字，写两座城镇隔江相望"
+                    ]
+                },
+                {
+                    text: "钟山只隔数重山",
+                    analysis: "诗人思念家乡，钟山就在不远处。",
+                    hints: [
+                        "和家乡有关",
+                        "第一个字是'钟'",
+                        "诗人觉得离家不远"
+                    ]
+                },
+                {
+                    text: "春风又绿江南岸",
+                    analysis: "春风一吹，江南都变绿了，这是千古名句！",
+                    hints: [
+                        "描写春天",
+                        "有一个字代表颜色",
+                        "千古名句"
+                    ]
+                },
+                {
+                    text: "明月何时照我还",
+                    analysis: "诗人望着月亮，想回家乡。",
+                    hints: [
+                        "和月亮有关",
+                        "问月亮什么时候能照着他回家",
+                        "表达思乡之情"
+                    ]
+                }
+            ]
+        };
+
+        const SYSTEM_PROMPT = `你是《泊船瓜洲》背诵小助手，专门帮助小朋友背诵古诗。
+
+【你的性格】
+- 温柔可爱，像小朋友的大朋友
+- 说话自然，像在聊天一样
+- 鼓励为主，从来不批评
+
+【绝对禁止】
+- 永远不要直接说出完整诗句！
+- 永远不要说超过两个字的开头提示！
+- 不要把诗句用引号框起来！
+
+【背诵帮助技巧】
+当用户背对了：
+- 用自然的语言夸奖，比如"太棒了！"、"哇，你真厉害！"
+- 可以描述下一句的画面感，比如"下一句写的是诗人看向远方"
+- 引导继续背诵
+
+当用户背错了：
+- 先鼓励，比如"没关系，再试试"
+- 给提示时用描述性语言，比如"这一句写的是诗人站在江边"
+- 提示第一个字时自然地说出来
+
+【回答要求】
+- 说话简短，像聊天一样
+- 多用感叹词和语气词
+- 每句话不超过30个字
+- 自然流畅，不要生硬`;
+
+        let state = {
+            currentLine: 0,
+            proficiency: 70,
+            isListening: false,
+            isAISpeaking: false,
+            recognition: null,
+            stats: { correct: 0, wrong: 0, hint: 0 },
+            hintLevel: 0,
+            consecutiveWrong: 0,
+            config: {
+                mode: 'local',
+                backendUrl: localStorage.getItem('backend_url') || window.location.origin,  // 默认使用当前域名
+                apiKey: localStorage.getItem('deepseek_api_key') || ''
+            },
+            conversationContext: [],
+            currentReciteIndex: 0,
+            reciteTimeout: null,
+            isReciting: false,
+            deepseekAvailable: false,
+            lastAIGreeting: '',
+            voiceConfig: {
+                index: undefined,
+                name: 'auto'
+            }
+        };
+
+        const modeNames = {
+            30: '🌱 初学者',
+            70: '🌿 进阶者',
+            100: '🌳 熟练者'
+        };
+
+        function goHome() {
+            window.location.href = 'index_optimized.html';
+        }
+
+        function restartRecite() {
+            state.isReciting = false;
+            stopListening();
+            cancelSpeech();
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            document.getElementById('aiModeBadge').className = 'local-badge';
+            document.getElementById('aiModeBadge').innerHTML = '🤖 本地模式';
+        }
+
+        function removeEmoji(text) {
+            return text
+                .replace(/#{1,6}\s*/g, '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/\*(.*?)\*/g, '$1')
+                .replace(/`(.*?)`/g, '$1')
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+                .replace(/^[-*_]{3,}$/gm, '')
+                .replace(/^>\s+/gm, '')
+                .replace(/^[-*]\s+/gm, '')
+                .replace(/^\d+\.\s+/gm, '')
+                .replace(/\*\*/g, '')
+                .replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/[\u{2600}-\u{26FF}]/gu, '')
+                .replace(/[\u{2700}-\u{27BF}]/gu, '').replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '').replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+                .replace(/[🎯📖👤✨📝💡🎤⏭✕🧑‍🏫🤖👦🌟❌✅🔗🔄✏️🎮📊👀📅🏆📜💬]/gu, '')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/——/g, '，').replace(/—/g, '，')
+                .replace(/\([^)]*\)/g, (m) => m.replace(/[a-zA-Z]/g, ''))
+                .replace(/（[^）]*）/g, (m) => m.replace(/[a-zA-Z]/g, ''))
+                .replace(/[\u3000-\u303F]/g, (m) => {
+                    const map = {'\u3000':' ','\u3001':'，','\u3002':'。','\uff0c':',','\uff0e':'.','\uff01':'!','\uff1f':'?'};
+                    return map[m] || m;
+                })
+                .replace(/[""''「」『』【】\[\]（）\(\)]/g, (m) => {
+                    const map = {'"':'', '"':'', "'":'', "「":'', "」":'', "『":'', "』":'', "【":'', "】":'', "[":'', "]":'', "（":'', "）":'', "(":'', ")":''};
+                    return map[m] || '';
+                })
+                .replace(/[.,!?;:。！？；：]/g, '，')
+                .replace(/\s+/g, ' ')
+                .replace(/，+/g, '，')
+                .replace(/^，|，$/g, '')
+                .trim();
+        }
+
+        function renderMarkdownForDisplay(text) {
+            let result = text;
+            result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+            result = result.replace(/^### (.+)$/gm, '<h4 class="text-base font-semibold mt-2 mb-1">$1</h4>');
+            result = result.replace(/^## (.+)$/gm, '<h3 class="text-lg font-bold mt-3 mb-1">$1</h3>');
+            result = result.replace(/^# (.+)$/gm, '<h2 class="text-xl font-bold mt-3 mb-2">$1</h2>');
+            result = result.replace(/^---$/gm, '<hr class="my-3 border-amber-200">');
+            result = result.replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>');
+            result = result.replace(/\n/g, '<br>');
+            return result;
+        }
+
+        function speakText(text, onFinish = null) {
+            if (state.reciteTimeout) {
+                clearTimeout(state.reciteTimeout);
+                state.reciteTimeout = null;
+            }
+
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+
+            if (!('speechSynthesis' in window)) {
+                if (onFinish) onFinish();
+                return;
+            }
+
+            try {
+                state.isAISpeaking = true;
+                updateStatus('AI正在说话...', 'speaking');
+
+                const cleanText = removeEmoji(text);
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.85;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                let selectedVoice = null;
+
+                if (state.voiceConfig.index !== undefined && voices[state.voiceConfig.index]) {
+                    selectedVoice = voices[state.voiceConfig.index];
+                } else if (voices.length > 0) {
+                    const preferredVoices = [
+                        v => v.lang === 'zh-CN' && v.name.includes('Xiaoxiao'),
+                        v => v.lang === 'zh-CN' && v.name.includes('Yaoyao'),
+                        v => v.lang === 'zh-CN' && v.name.includes('Luna'),
+                        v => v.lang === 'zh-CN' && v.name.includes('Meimei'),
+                        v => v.lang.includes('zh-CN') && v.name.includes('Huihui'),
+                        v => v.lang.includes('zh') && v.name.includes('Female'),
+                        v => v.lang.includes('zh') && !v.name.includes('Male'),
+                        v => v.lang.includes('zh')
+                    ];
+
+                    for (const filter of preferredVoices) {
+                        selectedVoice = voices.find(filter);
+                        if (selectedVoice) break;
+                    }
+                }
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                    utterance.lang = selectedVoice.lang;
+                } else if (voices.length > 0) {
+                    utterance.voice = voices[0];
+                }
+
+                const finishHandler = () => {
+                    state.isAISpeaking = false;
+                    updateStatus('等待中...');
+                    if (onFinish) {
+                        setTimeout(onFinish, 300);
+                    }
+                };
+
+                utterance.onend = finishHandler;
+                utterance.onerror = finishHandler;
+                window.speechSynthesis.speak(utterance);
+            } catch (e) {
+                console.error('Speech synthesis error:', e);
+                state.isAISpeaking = false;
+                updateStatus('等待中...');
+                if (onFinish) {
+                    setTimeout(onFinish, 300);
+                }
+            }
+        }
+
+        function cancelSpeech() {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+            state.isAISpeaking = false;
+        }
+
+        function updateStatus(text, type = '') {
+            const statusEl = document.getElementById('status');
+            if (!statusEl) return;
+            statusEl.innerHTML = text;
+            statusEl.className = 'status';
+            if (type === 'listening') {
+                statusEl.classList.add('status-listening');
+                statusEl.innerHTML = `<span class="wave-indicator"><span></span><span></span><span></span><span></span><span></span></span> ${text}`;
+            } else if (type === 'speaking') {
+                statusEl.classList.add('status-speaking');
+            }
+        }
+
+        function initSpeechRecognition() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) return null;
+
+            const recognition = new SR();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'zh-CN';
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                state.isListening = true;
+                updateStatus('正在聆听...', 'listening');
+                document.getElementById('userInput').innerHTML = `<span class="wave-indicator"><span></span><span></span><span></span><span></span><span></span></span> 请说话...`;
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (interimTranscript) {
+                    document.getElementById('userInput').textContent = interimTranscript;
+                }
+
+                if (finalTranscript.trim()) {
+                    stopListening();
+                    document.getElementById('userInput').textContent = finalTranscript.trim();
+                    handleUserRecitation(finalTranscript.trim());
+                }
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'aborted' || event.error === 'no-speech') {
+                    stopListening();
+                    return;
+                }
+                if (event.error === 'not-allowed') {
+                    updateFeedback('请允许使用麦克风权限', 'wrong');
+                    speakText('请允许使用麦克风，在浏览器地址栏左侧点击锁图标，允许麦克风权限。');
+                    return;
+                }
+                stopListening();
+                if (state.isReciting) {
+                    state.reciteTimeout = setTimeout(() => {
+                        if (!state.isListening && !state.isAISpeaking && state.isReciting) {
+                            askForRecitation();
+                        }
+                    }, 2000);
+                }
+            };
+
+            recognition.onend = () => {
+                state.isListening = false;
+                if (state.isReciting && !state.isAISpeaking) {
+                    state.reciteTimeout = setTimeout(() => {
+                        if (!state.isListening && !state.isAISpeaking && state.isReciting) {
+                            askForRecitation();
+                        }
+                    }, 1500);
+                }
+            };
+
+            return recognition;
+        }
+
+        function startListening() {
+            if (state.isAISpeaking || state.isListening) return;
+            if (!state.recognition) {
+                state.recognition = initSpeechRecognition();
+                if (!state.recognition) {
+                    updateFeedback('浏览器不支持语音识别，请使用Chrome或Edge', 'wrong');
+                    return;
+                }
+            }
+            try {
+                state.recognition.start();
+            } catch (e) {
+                state.recognition = null;
+                state.recognition = initSpeechRecognition();
+                try {
+                    if (state.recognition) state.recognition.start();
+                } catch (e2) {}
+            }
+        }
+
+        function stopListening() {
+            state.isListening = false;
+            if (state.recognition) {
+                try { state.recognition.stop(); } catch (e) {}
+            }
+        }
+
+        function updatePoemDisplay() {
+            const display = document.getElementById('poemDisplay');
+            if (!display) return;
+            let html = '';
+
+            for (let i = 0; i < CORPUS.lines.length; i++) {
+                const line = CORPUS.lines[i];
+                let className = 'waiting-line';
+                let textToShow = '_______';
+
+                if (i < state.currentReciteIndex) {
+                    className = 'completed-line';
+                    textToShow = line.text;
+                } else if (i === state.currentReciteIndex) {
+                    className = 'current-line';
+                    if (state.hintLevel > 0 && state.hintLevel < 3) {
+                        if (state.hintLevel === 1) {
+                            textToShow = line.text.charAt(0) + '________';
+                        } else if (state.hintLevel === 2) {
+                            textToShow = line.text.substring(0, 2) + '______';
+                        }
+                    }
+                }
+
+                html += `<div class="${className}" style="margin: 12px 0;">${textToShow}</div>`;
+            }
+
+            display.innerHTML = html;
+            document.getElementById('lineIndicator').textContent = `第 ${state.currentReciteIndex + 1} / ${CORPUS.lines.length} 句`;
+        }
+
+        function updateFeedback(text, type = '') {
+            const feedback = document.getElementById('feedback');
+            if (!feedback) return;
+            feedback.innerHTML = renderMarkdownForDisplay(text);
+            feedback.style.display = 'block';
+            feedback.className = 'feedback';
+
+            if (type === 'correct') {
+                feedback.classList.add('feedback-correct');
+            } else if (type === 'wrong') {
+                feedback.classList.add('feedback-wrong');
+            } else if (type === 'hint') {
+                feedback.classList.add('feedback-hint');
+            } else if (type === 'thinking') {
+                feedback.classList.add('feedback-thinking');
+            }
+        }
+
+        function updateProgress() {
+            const progress = Math.round((state.currentReciteIndex / CORPUS.lines.length) * 100);
+            const progressText = document.getElementById('progressText');
+            const progressRing = document.querySelector('.progress-ring');
+            if (progressText) progressText.textContent = progress + '%';
+            if (progressRing) progressRing.style.background = `conic-gradient(var(--gold) ${progress * 3.6}deg, var(--stone) ${progress * 3.6}deg)`;
+        }
+
+        function getAvailableHints() {
+            const baseHints = CORPUS.lines[state.currentReciteIndex]?.hints || [];
+            if (state.proficiency <= 30) {
+                return baseHints;
+            } else if (state.proficiency <= 70) {
+                return baseHints.length > 1 ? baseHints.slice(1) : baseHints;
+            } else {
+                return baseHints.length > 2 ? baseHints.slice(2) : baseHints;
+            }
+        }
+
+        function checkRecitation(text) {
+            const cleanText = text.replace(/[，。！？、\s，。、……]/g, '');
+            const targetLine = CORPUS.lines[state.currentReciteIndex].text.replace(/[，。！？、\s，。、……]/g, '');
+
+            if (cleanText === targetLine) return 'correct';
+            if (cleanText.includes(targetLine) || targetLine.includes(cleanText)) return 'correct';
+
+            let matchCount = 0;
+            const targetChars = targetLine.split('');
+            const textChars = cleanText.split('');
+
+            for (const tc of targetChars) {
+                if (textChars.includes(tc)) matchCount++;
+            }
+
+            const charMatchRate = matchCount / targetLine.length;
+            if (charMatchRate >= 0.6) return 'correct';
+            if (charMatchRate < 0.3 && cleanText.length > 3) return 'wrong';
+            return 'unclear';
+        }
+
+        async function askForRecitation() {
+            const lineNum = state.currentReciteIndex + 1;
+            const lineData = CORPUS.lines[state.currentReciteIndex];
+
+            if (state.deepseekAvailable) {
+                const context = buildContext();
+                const prompt = `${context}\n\n请引导用户背诵第${lineNum}句。用户现在要背这句诗了，请给一句简短的鼓励性话语（15字以内），然后简单描述一下这句诗的画面，再请用户开始背诵。`;
+
+                updateFeedback('AI思考中...', 'thinking');
+                const response = await callDeepSeek(prompt);
+
+                if (response) {
+                    speakText(response, () => {
+                        setTimeout(() => {
+                            updateFeedback('');
+                            startListening();
+                        }, 500);
+                    });
+                    return;
+                }
+            }
+
+            const greetings = getNaturalGreeting(lineNum, lineData);
+            speakText(greetings, () => {
+                setTimeout(() => {
+                    startListening();
+                }, 300);
+            });
+        }
+
+        function getNaturalGreeting(lineNum, lineData) {
+            const lineDescriptions = [
+                "这一句写的是诗人站在江边，看到京口和瓜洲隔江相望",
+                "这句说的是诗人望向钟山，那是他的家乡",
+                "这是千古名句，写的是春天来了，江南都变绿了",
+                "最后这句是诗人望着月亮，想回家乡"
+            ];
+
+            if (lineNum === 1) {
+                return "太好了！第一句来啦，这句描写的是诗人站在江边看到的美景，准备好了吗？";
+            }
+
+            const desc = lineDescriptions[lineNum - 1] || "";
+            return `太棒了！接下来是第${lineNum}句。${desc}，准备好了吗？`;
+        }
+
+        function buildContext() {
+            let context = `当前背诵进度：第${state.currentReciteIndex + 1}句（共4句）\n`;
+            context += `熟练程度：${modeNames[state.proficiency]}\n`;
+            context += `答对：${state.stats.correct}次，答错：${state.stats.wrong}次\n`;
+
+            if (state.consecutiveWrong > 0) {
+                context += `用户连续答错${state.consecutiveWrong}次了，需要多给鼓励。\n`;
+            }
+
+            return context;
+        }
+
+        async function callDeepSeek(prompt) {
+            try {
+                const history = state.conversationContext.slice(-8);
+
+                const apiUrl = `${window.location.origin}/api/chat`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: SYSTEM_PROMPT },
+                            ...history.map(h => ({ role: h.role, content: h.content })),
+                            { role: 'user', content: prompt }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    console.log('DeepSeek API error:', response.status);
+                    return null;
+                }
+
+                const data = await response.json();
+
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const content = data.choices[0].message.content;
+                    state.conversationContext.push({ role: 'user', content: prompt });
+                    state.conversationContext.push({ role: 'assistant', content: content });
+                    return content;
+                }
+
+                if (data.error) {
+                    console.log('DeepSeek error:', data.error);
+                    return null;
+                }
+
+            } catch (e) {
+                console.log('DeepSeek call failed:', e.message);
+            }
+            return null;
+        }
+
+        async function handleUserRecitation(text) {
+            const result = checkRecitation(text);
+
+            if (result === 'correct') {
+                await handleCorrectAnswer(text);
+            } else if (result === 'unclear') {
+                await handleUnclearAnswer();
+            } else {
+                await handleWrongAnswer(text);
+            }
+        }
+
+        async function handleCorrectAnswer(userSaid) {
+            state.stats.correct++;
+            state.consecutiveWrong = 0;
+            state.hintLevel = 0;
+
+            const lineNum = state.currentReciteIndex + 1;
+            const isLastLine = state.currentReciteIndex >= CORPUS.lines.length - 1;
+
+            updateFeedback('太棒了！🎉', 'correct');
+            updateProgress();
+
+            state.currentReciteIndex++;
+            updatePoemDisplay();
+
+            if (isLastLine) {
+                const finalPraise = getFinalPraise();
+                speakText(finalPraise, () => {
+                    setTimeout(() => showResult(), 1500);
+                });
+            } else {
+                const nextLineNum = state.currentReciteIndex + 1;
+
+                if (state.deepseekAvailable) {
+                    const prompt = `${buildContext()}\n\n用户刚刚正确背完第${lineNum}句，说的是"${userSaid}"。请给一句自然温暖的鼓励（20字以内），然后引导背诵下一句第${nextLineNum}句。`;
+
+                    updateFeedback('AI思考中...', 'thinking');
+                    const response = await callDeepSeek(prompt);
+
+                    if (response) {
+                        speakText(response, () => {
+                            setTimeout(() => {
+                                updateFeedback('');
+                                startListening();
+                            }, 500);
+                        });
+                        return;
+                    }
+                }
+
+                const nextPrompts = getNaturalNextPrompts(lineNum, nextLineNum);
+                speakText(nextPrompts, () => {
+                    setTimeout(() => {
+                        updateFeedback('');
+                        startListening();
+                    }, 500);
+                });
+            }
+        }
+
+        function getFinalPraise() {
+            const praises = [
+                "哇！你太厉害了！整首诗都会背了！真是个背诵小达人！",
+                "太棒了！四句诗全部背下来啦！你学得真好！",
+                "哇哇哇！全部正确！你真是古诗小天才！继续加油！"
+            ];
+            return praises[Math.floor(Math.random() * praises.length)];
+        }
+
+        function getNaturalNextPrompts(prevLineNum, nextLineNum) {
+            const encouragements = [
+                "太棒了！",
+                "哇，你真厉害！",
+                "太好了！",
+                "真不错！"
+            ];
+            const transitions = [
+                `接下来是第${nextLineNum}句，准备好了吗？`,
+                `继续加油！第${nextLineNum}句轮到你了！`,
+                `下一句更简单啦，准备好了吗？`
+            ];
+
+            const enc = encouragements[Math.floor(Math.random() * encouragements.length)];
+            const trans = transitions[Math.floor(Math.random() * transitions.length)];
+            return `${enc} ${trans}`;
+        }
+
+        async function handleUnclearAnswer() {
+            state.consecutiveWrong++;
+
+            if (state.consecutiveWrong >= 2) {
+                await handleWrongAnswer('');
+                return;
+            }
+
+            const unclearReplies = [
+                "我没听清楚呢，麻烦再说一次好吗？",
+                "好像没听清楚，再说一遍试试？",
+                "嗯？没听清楚，再说一次好不好？"
+            ];
+
+            const reply = unclearReplies[Math.floor(Math.random() * unclearReplies.length)];
+            updateFeedback('没听清楚', 'hint');
+            speakText(reply, () => {
+                setTimeout(() => startListening(), 500);
+            });
+        }
+
+        async function handleWrongAnswer(userSaid) {
+            state.stats.wrong++;
+            state.consecutiveWrong++;
+
+            const lineNum = state.currentReciteIndex + 1;
+            const lineText = CORPUS.lines[state.currentReciteIndex].text;
+            const hints = getAvailableHints();
+
+            if (state.consecutiveWrong === 1) {
+                const replies = [
+                    "没关系，再想想，你一定能想起来！",
+                    "不太对哦，但没关系，再试一次！",
+                    "哈哈，没关系，再想想看！"
+                ];
+                const reply = replies[Math.floor(Math.random() * replies.length)];
+                updateFeedback('再想想...', 'wrong');
+                speakText(reply, () => {
+                    setTimeout(() => startListening(), 500);
+                });
+
+            } else if (state.consecutiveWrong === 2 && hints.length > 0) {
+                state.hintLevel = 1;
+                state.stats.hint++;
+
+                if (state.deepseekAvailable) {
+                    const prompt = `${buildContext()}\n\n用户背第${lineNum}句时遇到困难，已经错了2次。请给一句温柔的鼓励，然后给一个描述性的提示帮助回忆（不能说完整诗句）。`;
+
+                    updateFeedback('AI思考中...', 'thinking');
+                    const response = await callDeepSeek(prompt);
+
+                    if (response) {
+                        updateFeedback('💡 提示', 'hint');
+                        updatePoemDisplay();
+                        speakText(response, () => {
+                            setTimeout(() => startListening(), 500);
+                        });
+                        return;
+                    }
+                }
+
+                const hintText = hints[0];
+                updateFeedback(`💡 提示：${hintText}`, 'hint');
+                updatePoemDisplay();
+                speakText(`提示一下，${hintText}`, () => {
+                    setTimeout(() => startListening(), 500);
+                });
+
+            } else if (state.consecutiveWrong === 3 && hints.length > 1) {
+                state.hintLevel = 2;
+                state.stats.hint++;
+                const hintText = hints[1];
+                updateFeedback(`💡 提示：${hintText}`, 'hint');
+                updatePoemDisplay();
+                speakText(`再给你一个提示，${hintText}`, () => {
+                    setTimeout(() => startListening(), 500);
+                });
+
+            } else if (state.consecutiveWrong >= 4) {
+                state.consecutiveWrong = 0;
+                state.hintLevel = 0;
+                state.stats.hint++;
+
+                updatePoemDisplay();
+
+                if (state.deepseekAvailable) {
+                    const prompt = `${buildContext()}\n\n用户背第${lineNum}句时多次错误。请简短讲解一下这句诗的意思来帮助理解（1句话，不超过25字），然后鼓励继续。`;
+
+                    updateFeedback('AI思考中...', 'thinking');
+                    const response = await callDeepSeek(prompt);
+
+                    if (response) {
+                        speakText(response, () => {
+                            setTimeout(() => {
+                                state.currentReciteIndex++;
+                                if (state.currentReciteIndex >= CORPUS.lines.length) {
+                                    setTimeout(() => showResult(), 1500);
+                                } else {
+                                    updatePoemDisplay();
+                                    updateProgress();
+                                    askForRecitation();
+                                }
+                            }, 1500);
+                        });
+                        return;
+                    }
+                }
+
+                const analysis = CORPUS.lines[state.currentReciteIndex].analysis;
+                speakText(`${analysis}没关系，我们继续下一句吧！`, () => {
+                    setTimeout(() => {
+                        state.currentReciteIndex++;
+                        if (state.currentReciteIndex >= CORPUS.lines.length) {
+                            setTimeout(() => showResult(), 1500);
+                        } else {
+                            updatePoemDisplay();
+                            updateProgress();
+                            askForRecitation();
+                        }
+                    }, 1500);
+                });
+            } else {
+                speakText('再想想，你可以的！', () => {
+                    setTimeout(() => startListening(), 500);
+                });
+            }
+        }
+
+        function showResult() {
+            state.isReciting = false;
+            stopListening();
+            cancelSpeech();
+
+            document.getElementById('reciteScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            document.getElementById('finalCorrect').textContent = state.stats.correct;
+            document.getElementById('finalWrong').textContent = state.stats.wrong;
+            document.getElementById('finalHint').textContent = state.stats.hint;
+
+            const total = state.stats.correct + state.stats.wrong;
+            const rate = total > 0 ? Math.round((state.stats.correct / total) * 100) : 0;
+            document.getElementById('finalRate').textContent = rate + '%';
+
+            let emoji, title, encouragement;
+
+            if (rate >= 90) {
+                emoji = '🏆';
+                title = '太棒了！你是背诵小达人！';
+                encouragement = '哇！你对这首诗掌握得真棒！不仅背诵正确，还理解诗意，真是太厉害了！继续保持这份热情，古诗学习一定会越来越棒的！';
+            } else if (rate >= 70) {
+                emoji = '🌟';
+                title = '很不错！继续加油！';
+                encouragement = '你做得很好！已经掌握了大半，继续练习剩下的部分，很快就能完全背下来了！加油！';
+            } else if (rate >= 50) {
+                emoji = '💪';
+                title = '有进步空间，继续努力！';
+                encouragement = '别灰心！背诵需要多练习。建议你先理解每句的意思，再多加练习，相信你一定能背下来的！';
+            } else {
+                emoji = '🌱';
+                title = '加油！从头开始！';
+                encouragement = '没关系，学习是循序渐进的过程。可以先从理解诗意开始，再慢慢背诵。记得多听多读，一定会进步的！';
+            }
+
+            document.getElementById('resultEmoji').textContent = emoji;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('encouragementText').textContent = encouragement;
+        }
+
+        function selectLevel(level) {
+            state.proficiency = level;
+            state.currentReciteIndex = 0;
+            state.hintLevel = 0;
+            state.consecutiveWrong = 0;
+            state.stats = { correct: 0, wrong: 0, hint: 0 };
+            state.conversationContext = [];
+            state.isReciting = true;
+            state.deepseekAvailable = (state.config.mode === 'deepseek' && state.config.apiKey);
+
+            cancelSpeech();
+            stopListening();
+
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('reciteScreen').classList.remove('hidden');
+            document.getElementById('modeText').textContent = modeNames[level];
+
+            if (state.deepseekAvailable) {
+                document.getElementById('currentAiBadge').innerHTML = '<span class="ai-badge">🤖 DeepSeek AI</span>';
+            } else {
+                document.getElementById('currentAiBadge').innerHTML = '<span class="local-badge">🤖 本地模式</span>';
+            }
+
+            updatePoemDisplay();
+            updateProgress();
+
+            const startMessages = {
+                30: `欢迎来到背诵挑战！我是${modeNames[level]}，我会给你很多提示帮助你学习。我们现在开始！准备好了吗？`,
+                70: `欢迎！你是${modeNames[level]}，我会适当给你提示。准备好了就开始吧！`,
+                100: `欢迎！你是${modeNames[level]}，完全自测，相信你一定能行！开始吧！`
+            };
+
+            setTimeout(() => {
+                speakText(startMessages[level], () => {
+                    setTimeout(() => {
+                        document.getElementById('userInput').innerHTML = `<span class="wave-indicator"><span></span><span></span><span></span><span></span><span></span></span> 请说话...`;
+                        updateFeedback('');
+                        askForRecitation();
+                    }, 500);
+                });
+            }, 1000);
+        }
+
+        async function checkDeepSeekConnection() {
+            try {
+                const apiUrl = `${window.location.origin}/api/chat`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: 'test' },
+                            { role: 'user', content: 'hello' }
+                        ]
+                    })
+                });
+
+                if (response.ok || response.status === 400) {
+                    state.deepseekAvailable = true;
+                    state.config.mode = 'deepseek';
+                }
+            } catch (e) {
+                console.log('API not available, using local mode');
+            }
+        }
+
+        function loadVoices() {
+            if (!window.speechSynthesis) return;
+
+            const voiceSelect = document.getElementById('voiceSelect');
+            const voiceStatus = document.getElementById('voiceStatus');
+            if (!voiceSelect) return;
+
+            const voices = window.speechSynthesis.getVoices() || [];
+
+            if (voices.length === 0) {
+                if (voiceStatus) voiceStatus.textContent = '加载中...';
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+                return;
+            }
+
+            voiceSelect.innerHTML = '<option value="auto">自动选择最佳语音</option>';
+
+            const zhVoices = voices.filter(v => v.lang.includes('zh'));
+            const otherVoices = voices.filter(v => !v.lang.includes('zh'));
+
+            zhVoices.forEach((voice, index) => {
+                const actualIndex = voices.indexOf(voice);
+                const option = document.createElement('option');
+                option.value = actualIndex;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+
+            if (otherVoices.length > 0) {
+                const divider = document.createElement('option');
+                divider.disabled = true;
+                divider.textContent = '--- 其他语音 ---';
+                voiceSelect.appendChild(divider);
+
+                otherVoices.forEach((voice) => {
+                    const actualIndex = voices.indexOf(voice);
+                    const option = document.createElement('option');
+                    option.value = actualIndex;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+            }
+
+            if (state.voiceConfig.index !== undefined) {
+                voiceSelect.value = state.voiceConfig.index;
+            }
+
+            if (voiceStatus) {
+                const selectedVoice = voices[voiceSelect.value];
+                if (selectedVoice) {
+                    voiceStatus.textContent = `当前: ${selectedVoice.name}`;
+                }
+            }
+        }
+
+        window.onload = async function() {
+            state.config.mode = 'local';
+
+            if (window.speechSynthesis) {
+                loadVoices();
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+
+                const voiceSelect = document.getElementById('voiceSelect');
+                if (voiceSelect) {
+                    voiceSelect.addEventListener('change', (e) => {
+                        const index = e.target.value;
+                        if (index === 'auto') {
+                            state.voiceConfig.index = undefined;
+                            state.voiceConfig.name = 'auto';
+                        } else {
+                            state.voiceConfig.index = parseInt(index);
+                            const voices = window.speechSynthesis.getVoices();
+                            if (voices[index]) {
+                                state.voiceConfig.name = voices[index].name;
+                            }
+                        }
+                    });
+                }
+            }
+
+            await checkDeepSeekConnection();
+
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('welcomeScreen').classList.remove('hidden');
+
+                if (state.deepseekAvailable) {
+                    document.getElementById('aiModeBadge').className = 'ai-badge';
+                    document.getElementById('aiModeBadge').innerHTML = '🤖 DeepSeek AI 已连接';
+                }
+            }, 500);
+        };
+
+        window.onbeforeunload = function() {
+            cancelSpeech();
+            stopListening();
+        };
+    </script>
+</body>
+</html>

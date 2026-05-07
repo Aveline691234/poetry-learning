@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI古诗小老师 - 泊船瓜洲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+        :root {
+            --primary: #8B7355; --primary-light: #9B8365; --primary-dark: #6B5545;
+            --gold: #C9A96E; --gold-light: #D4B87A; --gold-dark: #B8944E;
+            --stone: #F9F6F1; --stone-dark: #EBE5DB;
+            --text-dark: #4A3F35; --text-medium: #6B5545; --text-light: #9B8365;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Noto Serif SC', serif; background: linear-gradient(180deg, #FDFCFA 0%, #F9F6F1 100%); }
+        .poem-text { font-family: 'Ma Shan Zheng', cursive; }
+        .card { background: linear-gradient(145deg, #FFFFFF 0%, #FDFCFA 100%); border: 1px solid #EBE5DB; border-radius: 16px; box-shadow: 0 2px 12px rgba(139,119,89,0.06); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 12px; padding: 10px 20px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,119,89,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, var(--stone) 0%, var(--stone-dark) 100%); color: var(--text-medium); border-radius: 12px; padding: 10px 20px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-secondary:hover { transform: translateY(-1px); }
+        .btn-sm { padding: 7px 14px; font-size: 14px; border-radius: 10px; }
+        .mic-btn { background: linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 50%, #5B4738 100%); border: 3px solid var(--gold); box-shadow: 0 4px 16px rgba(139,119,89,0.35); border-radius: 50%; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; transition: all 0.3s; }
+        .mic-btn:hover { transform: scale(1.05); }
+        .mic-btn.listening { background: linear-gradient(145deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold-dark) 100%); animation: pulse-glow 1.5s ease-in-out infinite; }
+        .mic-btn.ai-speaking { opacity: 0.7; cursor: pointer; }
+        @keyframes pulse-glow { 0%,100% { box-shadow: 0 4px 16px rgba(201,169,110,0.4); } 50% { box-shadow: 0 4px 28px rgba(201,169,110,0.7); } }
+        .poem-line { background: linear-gradient(135deg, #FFFDF8 0%, #F8F4EC 100%); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; padding: 8px 14px; margin-bottom: 6px; transition: all 0.3s; cursor: pointer; }
+        .poem-line:hover { transform: translateX(2px); }
+        .poem-line.active { background: linear-gradient(135deg, #FEF3E2 0%, #FDE8C3 100%); border-left-color: #F59E0B; }
+        .poem-line.completed { background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); border-left-color: #66BB6A; }
+        .progress-bar { background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark)); border-radius: 9999px; height: 8px; box-shadow: 0 0 10px rgba(201,169,110,0.4); }
+        .wave { animation: wave 1.5s ease-in-out infinite; }
+        @keyframes wave { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+        .chat-bubble-ai { background: linear-gradient(135deg, #FEF9F0 0%, #FAF3E8 100%); border-radius: 14px 14px 14px 4px; padding: 12px 16px; max-width: 85%; line-height: 1.6; }
+        .chat-bubble-user { background: linear-gradient(135deg, #E8F4FC 0%, #D9EDF7 100%); border-radius: 14px 14px 4px 14px; padding: 12px 16px; max-width: 85%; line-height: 1.6; }
+        .chat-bubble-system { background: linear-gradient(135deg, #FFF8E1 0%, #FFF3CD 100%); border-radius: 14px; padding: 12px 16px; max-width: 90%; border: 1px dashed var(--gold); line-height: 1.6; }
+        .recite-char { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: var(--stone); border-radius: 8px; font-size: 18px; font-weight: 600; margin: 3px; transition: all 0.3s; color: var(--text-dark); }
+        .recite-char.correct { background: #E8F5E9; border: 2px solid #66BB6A; color: #2E7D32; }
+        .recite-char.wrong { background: #FFEEEE; border: 2px solid #EF4444; color: #C62828; animation: shake 0.5s ease; }
+        .recite-char.hint { background: #E8F0FE; border: 2px dashed #7A9CBF; color: #7A9CBF; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+        .recite-card { background: linear-gradient(135deg, #FFFBF0 0%, #FFF5E1 100%); border: 2px solid var(--gold); border-radius: 16px; padding: 16px; }
+        .quick-btn { background: white; border: 1px solid var(--stone-dark); border-radius: 20px; padding: 6px 16px; font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; color: var(--text-medium); }
+        .quick-btn:hover { background: var(--stone); border-color: var(--gold); }
+        .typing-indicator { display: inline-flex; gap: 4px; padding: 4px 0; }
+        .typing-indicator span { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; animation: typing 1.4s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+    </style>
+</head>
+<body>
+    <div class="flex h-screen">
+        <div class="w-2/5 flex-shrink-0 flex flex-col gap-4 p-4 bg-[var(--stone)] border-r border-[var(--stone-dark)]" style="width: 40%; max-width: 40%;">
+            <div class="text-center pb-3 border-b border-[var(--stone-dark)]">
+                <h1 class="font-bold text-[var(--text-dark)]" style="font-size: 20px;">AI古诗小老师</h1>
+                <p class="poem-text text-[var(--gold-dark)]" style="font-size: 18px;">泊船瓜洲</p>
+                <p class="text-[var(--text-light)]" style="font-size: 13px;">【宋】王安石</p>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <div class="space-y-1.5">
+                    <div class="poem-line" data-line="0">
+                        <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 16px;">京口瓜洲一水间</p>
+                    </div>
+                    <div class="poem-line" data-line="1">
+                        <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 16px;">钟山只隔数重山</p>
+                    </div>
+                    <div class="poem-line" data-line="2">
+                        <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 16px;">春风又绿江南岸</p>
+                    </div>
+                    <div class="poem-line" data-line="3">
+                        <p class="poem-text text-center text-[var(--text-dark)]" style="font-size: 16px;">明月何时照我还</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-[var(--stone-dark)] pt-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-[var(--text-medium)]" style="font-size: 14px;">学习进度</span>
+                    <span id="stars" class="text-[var(--gold-dark)] font-bold" style="font-size: 16px;">☆☆☆</span>
+                </div>
+                <div class="w-full bg-white rounded-full h-2 overflow-hidden">
+                    <div id="progressBar" class="progress-bar h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="learnedCount" class="text-[var(--text-light)] mt-1 block" style="font-size: 13px;">已学 0/4 句</span>
+            </div>
+
+            <div class="border-t border-[var(--stone-dark)] pt-3">
+                <div class="relative aspect-video bg-gray-100 rounded-xl overflow-hidden mb-2">
+                    <video id="video" autoplay muted playsinline class="w-full h-full object-cover"></video>
+                    <div class="absolute inset-0 flex items-center justify-center bg-gray-100/80" id="cameraPlaceholder">
+                        <div class="text-center"><div class="text-xl mb-1">📷</div><p class="text-gray-500" style="font-size: 12px;">点击下方开启</p></div>
+                    </div>
+                </div>
+                <div class="flex justify-center gap-2">
+                    <button id="startCamera" type="button" class="btn-secondary btn-sm" style="font-size: 12px;">开启摄像头</button>
+                    <button id="stopCamera" type="button" class="btn-secondary btn-sm" style="font-size: 12px;" disabled>关闭</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="configBtn" type="button" class="btn-secondary btn-sm flex-1" style="font-size: 13px;">⚙️ 配置</button>
+                <button id="resetBtn" type="button" class="btn-secondary btn-sm flex-1" style="font-size: 13px;">🔄 重置</button>
+            </div>
+            <div class="flex gap-2">
+                <button id="gameBtn" type="button" class="btn-primary btn-sm flex-1" style="font-size: 13px;">🎮 游戏</button>
+                <button id="poetBtn" type="button" class="btn-secondary btn-sm flex-1" style="font-size: 13px;">👤 诗人</button>
+                <button id="reportBtn" type="button" class="btn-secondary btn-sm flex-1" style="font-size: 13px;">📊 报告</button>
+            </div>
+        </div>
+
+        <div class="w-3/5 flex flex-col min-h-0" style="width: 60%; max-width: 60%;">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--stone-dark)] bg-white/60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-xl shadow-md">🧑‍🏫</div>
+                    <div>
+                        <h3 class="font-bold text-[var(--text-dark)]" style="font-size: 16px;">泊船瓜洲小助手</h3>
+                        <p class="text-[var(--text-light)]" style="font-size: 13px;" id="aiMood">准备开讲...</p>
+                    </div>
+                </div>
+                <div id="reciteStatus" class="hidden items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-200">
+                    <span class="text-amber-600 font-bold" style="font-size: 14px;">🎯 背诵中</span>
+                    <span id="reciteLineInfo" class="text-amber-700" style="font-size: 14px;">第1/4句</span>
+                    <button id="stopReciteBtn" type="button" class="ml-2 text-amber-600 hover:text-amber-800 font-bold" style="font-size: 14px;">✕ 退出</button>
+                </div>
+            </div>
+
+            <div id="chatArea" class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-xs flex-shrink-0">🤖</div>
+                    <div class="chat-bubble-ai">
+                        <p class="text-[var(--text-dark)]" style="font-size: 16px;">你好呀！我是泊船瓜洲小助手🧑‍🏫 今天我们来学王安石的《泊船瓜洲》。你可以问我诗句的意思，也可以点击「开始背诵」来挑战自己！</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quickReplies" class="px-5 py-2 flex gap-2 overflow-x-auto border-t border-[var(--stone-dark)] bg-white/40">
+                <button class="quick-btn" data-text="这首诗什么意思？">📖 诗的意思</button>
+                <button class="quick-btn" data-text="作者是谁？">👤 作者介绍</button>
+                <button class="quick-btn" data-text="哪个字用得最好？">✨ 名句赏析</button>
+                <button class="quick-btn" data-text="开始背诵">🎯 开始背诵</button>
+                <button class="quick-btn" data-text="教我背诗">📝 教我背诗</button>
+            </div>
+
+            <div class="px-5 py-3 border-t border-[var(--stone-dark)] bg-white/80">
+                <div class="flex items-center gap-4">
+                    <button id="speakButton" type="button" class="mic-btn flex-shrink-0">🎤</button>
+                    <div class="flex-1">
+                        <div id="listeningIndicator" class="hidden flex items-center gap-2">
+                            <div class="flex gap-1">
+                                <span class="w-1.5 h-4 bg-amber-400 rounded wave" style="animation-delay: 0s;"></span>
+                                <span class="w-1.5 h-6 bg-amber-400 rounded wave" style="animation-delay: 0.1s;"></span>
+                                <span class="w-1.5 h-8 bg-amber-400 rounded wave" style="animation-delay: 0.2s;"></span>
+                                <span class="w-1.5 h-6 bg-amber-400 rounded wave" style="animation-delay: 0.3s;"></span>
+                                <span class="w-1.5 h-4 bg-amber-400 rounded wave" style="animation-delay: 0.4s;"></span>
+                            </div>
+                            <span class="text-amber-600 font-medium" style="font-size: 15px;">正在听...</span>
+                        </div>
+                        <p id="micHint" class="text-[var(--text-light)]" style="font-size: 15px;">点击麦克风或输入文字</p>
+                    </div>
+                    <div id="hintBtn" class="hidden">
+                        <button type="button" class="btn-secondary btn-sm" style="font-size: 13px;">💡 提示</button>
+                    </div>
+                    <div id="skipBtn" class="hidden">
+                        <button type="button" class="btn-secondary btn-sm" style="font-size: 13px;">⏭ 跳过</button>
+                    </div>
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <input type="text" id="textInput" class="flex-1 border-2 border-[var(--stone-dark)] rounded-xl px-4 py-2" style="font-size: 15px;" placeholder="也可以打字输入...">
+                    <button id="sendBtn" type="button" class="btn-primary btn-sm">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="configModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-6 max-w-md mx-4 w-full shadow-2xl">
+            <h3 class="text-xl font-bold text-[var(--text-dark)] mb-5">⚙️ AI配置</h3>
+            <div class="mb-5">
+                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 16px;">AI模式：</label>
+                <div class="flex gap-3">
+                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 16px;" data-mode="local">本地模式</button>
+                    <button class="mode-btn flex-1 bg-[var(--stone)] text-[var(--text-medium)] px-4 py-3 rounded-xl" style="font-size: 16px;" data-mode="deepseek">DeepSeek</button>
+                </div>
+            </div>
+            <div class="mb-5">
+                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 16px;">后端地址：</label>
+                <input type="text" id="backendUrlInput" class="w-full border-2 border-[var(--stone-dark)] rounded-xl px-4 py-3" style="font-size: 16px;" value="http://localhost:8000">
+            </div>
+            <div class="mb-5">
+                <label class="block text-[var(--text-medium)] mb-2" style="font-size: 16px;">语音选择：</label>
+                <select id="voiceSelect" class="w-full border-2 border-[var(--stone-dark)] rounded-xl px-4 py-3" style="font-size: 16px;">
+                    <option value="auto">自动选择最佳语音</option>
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button id="cancelConfig" type="button" class="flex-1 btn-secondary py-3">取消</button>
+                <button id="saveConfig" type="button" class="flex-1 btn-primary py-3">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-[40cm] h-[32cm] shadow-2xl overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-2xl font-bold text-[var(--text-dark)]" id="gameTitle">🎮 趣味游戏</h3>
+                <button id="closeGame" type="button" class="text-[var(--text-light)] hover:text-[var(--text-dark)] text-3xl">&times;</button>
+            </div>
+            <div id="gameContent" class="flex-1 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="poetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-6 max-w-lg mx-4 w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-[var(--text-dark)]">👤 诗人卡片</h3>
+                <button id="closePoet" type="button" class="text-[var(--text-light)] hover:text-[var(--text-dark)] text-2xl">&times;</button>
+            </div>
+            <div id="poetContent">
+                <div class="text-center mb-4">
+                    <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto shadow-lg mb-3">📜</div>
+                    <h4 class="font-bold text-[var(--text-dark)]" style="font-size: 22px;">王安石</h4>
+                    <p class="text-[var(--text-light)]" style="font-size: 14px;">字介甫 · 号半山</p>
+                </div>
+                <div class="space-y-3">
+                    <div class="p-3 bg-amber-50 rounded-xl">
+                        <p class="font-bold text-amber-700 mb-1" style="font-size: 14px;">📅 生平</p>
+                        <p class="text-[var(--text-dark)]" style="font-size: 15px;">王安石（1021-1086），北宋临川（今江西抚州）人。唐宋八大家之一，曾任宰相，主导著名的"王安石变法"。</p>
+                    </div>
+                    <div class="p-3 bg-blue-50 rounded-xl">
+                        <p class="font-bold text-blue-700 mb-1" style="font-size: 14px;">🏆 成就</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full" style="font-size: 13px;">唐宋八大家</span>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full" style="font-size: 13px;">政治家</span>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full" style="font-size: 13px;">文学家</span>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full" style="font-size: 13px;">思想家</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-xl">
+                        <p class="font-bold text-green-700 mb-1" style="font-size: 14px;">📖 代表作品</p>
+                        <div class="space-y-1">
+                            <p class="text-[var(--text-dark)]" style="font-size: 15px;">• 《泊船瓜洲》⭐</p>
+                            <p class="text-[var(--text-dark)]" style="font-size: 15px;">• 《元日》</p>
+                            <p class="text-[var(--text-dark)]" style="font-size: 15px;">• 《梅花》</p>
+                            <p class="text-[var(--text-dark)]" style="font-size: 15px;">• 《登飞来峰》</p>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-xl">
+                        <p class="font-bold text-purple-700 mb-1" style="font-size: 14px;">💡 趣闻</p>
+                        <p class="text-[var(--text-dark)]" style="font-size: 15px;">王安石写"春风又绿江南岸"时，"绿"字改了十几次！先用了"到""过""入""满"等字，最后才定为"绿"，成为千古名句。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reportModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity">
+        <div class="bg-white rounded-2xl p-6 max-w-lg mx-4 w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-[var(--text-dark)]">📊 学习报告</h3>
+                <button id="closeReport" type="button" class="text-[var(--text-light)] hover:text-[var(--text-dark)] text-2xl">&times;</button>
+            </div>
+            <div id="reportContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const App = {
+            state: 'IDLE',
+            config: { mode: 'deepseek', backendUrl: 'http://localhost:8000' },
+            isListening: false,
+            isAISpeaking: false,
+            recognition: null,
+            learnedLines: 0,
+            currentReciteIndex: 0,
+            reciteTimeout: null,
+            conversationHistory: [],
+            videoStream: null,
+            currentReciteCardId: null,
+            pendingCallback: null,
+            lastAIMessage: '',
+            gameScore: 0,
+            gameRound: 0,
+            gameCorrect: 0,
+
+            POEM_DATA: {
+                title: "泊船瓜洲", author: "王安石", dynasty: "北宋",
+                content: ["京口瓜洲一水间", "钟山只隔数重山", "春风又绿江南岸", "明月何时照我还"]
+            },
+
+            CORPUS: {
+                textbook_info: "人教版小学语文五年级上册第二组第一篇课文《古诗词三首》中的第一首，脍炙人口、情意绵绵的思乡诗。",
+
+                author_info: "王安石（1021-1086），字介甫，号半山，北宋临川（今江西抚州）人。唐宋八大家之一，曾任宰相，主导\"王安石变法\"。才华横溢，诗词文章俱佳。",
+
+                writing_background: "北宋熙宁七年（1076年），王安石第二次拜相后奉旨进京，途经瓜洲渡口。他站在船上，望着对岸的家乡钟山，写下这首思乡名作。此诗是诗人应召自江宁赴京任翰林学士途中作，感慨仕途多险，前途未测，对仕途没有足够信心。",
+
+                overall_intro: "这四句诗，描绘了一幅由近及远、由景生情的画面。《泊船瓜洲》短短二十八字，是王安石炼字匠心的极致凝练，更是融江南春色、思乡柔情与家国大义于一体的千古绝唱。",
+
+                key_words: {
+                    "泊船": "停船靠岸（读音：bó）",
+                    "瓜洲": "长江北岸的渡口，在今天江苏省扬州市南",
+                    "京口": "长江南岸的城镇，就是今天的江苏省镇江市",
+                    "一水间": "只隔着一条长江，写出了距离之近（「间」读音：jiàn）",
+                    "钟山": "诗人的家，在今天的南京紫金山",
+                    "数重山": "几座山的意思（「重」读音：chóng）",
+                    "绿": "这里是动词，意为\"吹绿\"，是这首诗的诗眼",
+                    "还": "回家的意思（读音：huán）"
+                },
+
+                lines: [
+                    {
+                        text: "京口瓜洲一水间",
+                        analysis: "瓜洲和京口，只隔着一条长江。\"一水间\"三字写得非常巧妙，强调了距离之近，但这种近反而反衬出诗人即将远行的不舍，有一种咫尺天涯的感觉。",
+                        interpretation: "诗人描绘了一个非常清晰的空间画面：瓜洲和京口隔江相望。明明近在咫尺，却即将分别，更增添了离愁。",
+                        writing_technique: "以近写远，用空间的近反衬心理的远"
+                    },
+                    {
+                        text: "钟山只隔数重山",
+                        analysis: "诗人的视线从眼前的京口，延伸到了远方的家园——钟山。他用\"只隔\"两个字，再次强调了距离之近。这当然不是实际的距离，而是因为思念而产生的心理距离的缩短。从京口到钟山，诗人的思乡之情也随之变得更加深沉。",
+                        interpretation: "\"只隔\"二字表面说距离近，实际上是诗人思念家乡的心理投射。越是想家，越觉得家近。",
+                        writing_technique: "心理距离与实际距离的交织，情与景融"
+                    },
+                    {
+                        text: "春风又绿江南岸",
+                        analysis: "这是千古名句！一个\"绿\"字，把春风写活了，仿佛我们能看到江南两岸瞬间披上绿装的动态过程。而一个\"又\"字，则点明了时间的流逝，年复一年，春天又来了，但诗人却依然在外漂泊。这生机勃勃的春景，反而更加衬托出诗人内心的思乡之愁，这是以乐景写哀情的典范。",
+                        interpretation: "\"绿\"字是诗眼，王安石弃\"到、过、入、满\"等十余字反复推敲，终择\"绿\"字化静为动，既绘出江南春草破土、绿意漫卷的鲜活景致，又让无形春风有了具象生命力。",
+                        writing_technique: "以乐景写哀情（乐景：生机勃勃的春色；哀情：无法归家的惆怅）"
+                    },
+                    {
+                        text: "明月何时照我还",
+                        analysis: "诗人由白日的眺望，转到夜晚的凝望。明月，自古以来就是寄托乡愁的经典意象。诗人望着明月，发出了内心的追问：什么时候才能回去呢？这句诗直抒胸臆，将思乡之情推向了顶点。以一个问句结尾，给读者留下了无尽的想象空间和悠长的回味。",
+                        interpretation: "\"明月何时照我还\"的追问，既是对故乡钟山的眷恋，更是对家国安定、变法有成的期盼。个人的思乡柔肠，与心怀天下的家国情怀相融，让这首小诗跳出普通思乡诗的格局。",
+                        writing_technique: "借景抒情（明月寄乡愁），以问句结尾留白"
+                    }
+                ],
+
+                theme: "这首诗以\"近\"写\"远\"——京口瓜洲一水之隔，钟山只隔数重山，明明离家很近，却因为公务在身无法回去。春风又绿江南岸，美景更添乡愁，最终化为一句\"明月何时照我还\"，道尽思乡之情。同时，这首诗还融入了王安石心系家国社稷的厚重情怀。",
+
+                theme_analysis: "王安石的思乡，从非单纯儿女情长。彼时他力推变法、心系苍生，虽身泊瓜洲，心却牵系家国社稷。\"明月何时照我还\"的追问，既是对故乡钟山的眷恋，更是对家国安定、变法有成的期盼。个人的思乡柔肠，与心怀天下的家国情怀相融，让这首小诗跳出普通思乡诗的格局，多了一份厚重担当。",
+
+                writing_techniques: [
+                    "以近写远：用\"一水间\"、\"只隔\"强调距离之近，反衬不能归家之远",
+                    "以乐景写哀情：生机勃勃的春色衬托无法归家的惆怅",
+                    "炼字典范：\"绿\"字改了十几次，终成诗眼",
+                    "借景抒情：明月自古是乡愁的寄托",
+                    "情景交融：景为情设、情随景生"
+                ],
+
+                modern_significance: "作为新时代学子，我们品读《泊船瓜洲》，既要学王安石炼字的精益求精，对待学业一丝不苟、反复打磨；更要读懂藏在文字里的家国情怀，把个人成长与家国发展相连，如诗人般既有对生活的细腻感知，更有对家国的赤诚担当。",
+
+                hints: [
+                    ["京口和瓜洲是两个地名，隔着一条江", "第一个字是'京'", "七个字，写两地的距离"],
+                    ["王安石的家乡在钟山附近", "和'家'有关", "诗人觉得离家很近"],
+                    ["全诗最有名的一句！春风和颜色有关", "那个字代表一种颜色", "春天来了，大地变什么色？"],
+                    ["诗人望着天上的什么想家？", "和月亮有关", "表达了想回家的心情"]
+                ],
+
+                dialogue_qa: [
+                    {
+                        question: "这首诗哪个字用得最好？",
+                        answer: "当然是\"绿\"字！这是千古炼字的巅峰。王安石弃\"到、过、入、满\"等十余字反复推敲，终择\"绿\"字——化静为动，让春风有了具象生命力，一字便让万里春色跃然纸上！"
+                    },
+                    {
+                        question: "春风又绿江南岸好在哪里？",
+                        answer: "一个\"绿\"字把春风写活了！我们能看到江南两岸瞬间披上绿装的动态过程。而\"又\"字点明时间流逝——春天年复一年来了，诗人却依然漂泊在外，这是以乐景写哀情的典范！"
+                    },
+                    {
+                        question: "诗人是怎么表达思乡之情的？",
+                        answer: "诗人先用\"一水间\"、\"只隔数重山\"反复强调离家很近，但\"近\"反而更显\"远\"——近的是距离，远的是归期。最后望月发问\"何时照我还\"，把乡愁推向顶点。"
+                    },
+                    {
+                        question: "这首诗只是写思乡吗？",
+                        answer: "不只是！王安石虽身泊瓜洲，心却牵系家国社稷。\"明月何时照我还\"既是对故乡的眷恋，也是对家国安定、变法有成的期盼。个人柔肠与家国情怀相融，让这首诗多了厚重担当。"
+                    }
+                ]
+            },
+
+            SYSTEM_PROMPT: `【🎯 核心定位】
+你是「泊船瓜洲小助手」，专门帮助用户学习王安石的《泊船瓜洲》。
+
+【✅ 允许回答的范围】
+1. 《泊船瓜洲》的任何相关问题：诗句意思、写作手法、诗人情感、炼字之妙等
+2. 王安石的生平、成就、文学地位（如：唐宋八大家、宰相、变法等）
+3. 北宋历史背景、科举制度、诗词鉴赏方法等扩展知识
+4. 其他古典诗词的常见问题
+5. 与学习、古诗背诵相关的问题
+
+【✅ 回答原则】
+1. 如果问题在语料库中有明确的答案，直接回答
+2. 如果问题与语料库内容相关但没有直接答案，可以基于历史常识和语料库内容进行合理推断
+3. 如果问题超出范围但与学习相关，可以给出简短的开放性回答并引导回诗歌学习
+4. 如果用户问的是诗词、诗人、历史等正经知识，可以给出基于历史事实的回答（不必说"不知道"）
+
+【⛔️ 严格禁止的行为】
+1. 严禁编造具体历史数据（如具体年份、数字等），只能说"根据史料记载"等模糊表述
+2. 严禁胡编乱造诗词内容、名句等
+3. 严禁回答与诗词学习完全无关的问题（如娱乐八卦、现代生活等）
+4. 严禁说"我不知道"然后直接结束，可以引导用户问与学习相关的问题
+
+【⛔️ 背诵模式绝对禁止规则（最重要！）】
+当用户进入背诵模式时（无论是"开始背诵"还是"教我背诗"）：
+1. 【绝对禁止】永远不要直接说出完整诗句！
+2. 【绝对禁止】永远不要说出超过两个字的开头！
+3. 【绝对禁止】不要把诗句用引号引出来给用户看！
+4. 【绝对禁止】不要把诗句作为示例或例子说出来！
+
+【🎯 开始背诵模式】（用户说"开始背诵"或"我要背诵"）：
+1. 【立即开始】直接说"好的，开始吧！请背诵第一句："
+2. 【不要给出任何诗句】不要说诗句的任何内容
+3. 【等待用户】给用户至少10秒时间思考和回答
+4. 【超时询问】只有当用户停顿超过10秒时，才说"怎么了？需要提示吗？"
+5. 【逐步提示】如果用户明确说"需要提示"或"忘了"：
+   - 第一次提示：只能说第一个字，例如"第一个字是'京'"
+   - 第二次提示：最多说前两个字，例如"'京口'..."
+   - 第三次提示：描述诗句的意思，例如"诗人站在江边看到的景色..."
+   - 只有用户明确说"不知道"或"我不会"时，才可以说出完整诗句
+
+【🎯 教我背诗模式】（用户说"教我背诗"或"我想学"）：
+1. 先询问熟悉程度（完全不熟悉/有些熟悉/完全熟悉）
+2. 【严禁直接说诗句】即使是教学，也不要直接说出完整诗句
+3. 用描述性语言解释诗意，引导用户自己回忆和说出诗句
+4. 例如："这首诗写的是诗人站在瓜洲渡口，望着对岸的家乡..."
+
+【✅ 正确示范】：
+- 正确："好的，开始吧！请背诵第一句："（等待用户）
+- 正确："需要提示吗？第一个字是'京'"
+- 错误："第一句是'京口瓜洲一水间'"
+- 错误："让我们一起读：京口瓜洲一水间"
+
+【⚠️ 所有模式通用规则】：
+1. 【耐心等待】给用户足够的时间思考，至少等待10秒
+2. 【鼓励为主】多说"试试看！"、"你可以的！"等鼓励的话
+3. 【循序渐进】一句一句来，背完一句再提示下一句
+4. 【严禁直接说答案】除非用户明确说"不知道"，否则绝对不要说出完整诗句
+
+【📚 语料库：人教版教材信息】
+教材位置：人教版小学语文五年级上册第二组第一篇课文《古诗词三首》中的第一首
+教材定位：脍炙人口、情意绵绵的思乡诗，表达作者对家乡深深的思恋和热爱
+
+【📖 诗歌原文】
+京口瓜洲一水间，钟山只隔数重山。春风又绿江南岸，明月何时照我还？
+
+【📚 整体介绍】
+这四句诗，描绘了一幅由近及远、由景生情的画面。《泊船瓜洲》短短二十八字，是王安石炼字匠心的极致凝练，更是融江南春色、思乡柔情与家国大义于一体的千古绝唱。
+
+【👤 作者信息】
+王安石（1021-1086），字介甫，号半山，北宋临川人。唐宋八大家之一，曾任宰相，主导"王安石变法"。
+
+【📅 写作背景】
+北宋熙宁七年（1076年），王安石第二次拜相后奉旨进京，途经瓜洲渡口，望对岸家乡钟山，写下此诗。此诗是诗人应召自江宁赴京任翰林学士途中作，感慨仕途多险，前途未测。
+
+【🔤 关键词解释】
+泊船：停船靠岸（读音：bó）
+瓜洲：长江北岸的渡口，在今天江苏省扬州市南
+京口：长江南岸的城镇，就是今天的江苏省镇江市
+一水间：只隔着一条长江，写出了距离之近（「间」读音：jiàn）
+钟山：诗人的家，在今天的南京紫金山
+数重山：几座山的意思（「重」读音：chóng）
+绿：这里是动词，意为"吹绿"，是这首诗的诗眼
+还：回家的意思（读音：huán）
+
+【📝 逐句详细赏析】
+1. 京口瓜洲一水间：诗人在瓜洲遥望家乡时所见所想。瓜洲和京口，只隔着一条长江。一道长江水，数重大山，在交通不便的古代，可谓是山高水长，路途遥远。为什么诗人觉得只是"一水"呢？实际距离和心理距离产生的巨大反差，正好说明了诗人人在途中，心向远方，却心系家乡。恋乡之情跃然纸上。
+2. 钟山只隔数重山：诗人的视线从眼前的京口，延伸到了远方的家园——钟山。他用"只隔"两个字，再次强调了距离之近。这当然不是实际的距离，而是因为思念而产生的心理距离的缩短。从京口到钟山，诗人的思乡之情也随之变得更加深沉。
+3. 春风又绿江南岸：这是千古名句！诗句点明了诗人离乡的时间，正是草长莺飞的春天。看到春天满目的新绿，想到春天去了有再来的时候，而自己离开了家乡，什么时候能再回来呢？这一思乡的愁绪像春天的草一样，很快地滋生、蔓延起来。当春风绿了江南两岸的时候，诗人的心里也长满了乡愁。诗人的思乡情从离开家乡的时候就开始了，刚刚离开，就已经想着回来，更见其情之浓烈。这生机勃勃的春景，反而更加衬托出诗人内心的思乡之愁，是以乐景写哀情的典范。
+4. 明月何时照我还：诗人由白日的眺望，转到夜晚的凝望。明月，自古以来就是寄托乡愁的经典意象。诗句中提到了明月：一是因为诗人夜宿瓜洲，二是月亮蕴涵着团圆之意。诗人望着明月，发出了内心的追问：什么时候才能回去呢？这句诗直抒胸臆，将思乡之情推向了顶点。以一个问句结尾，给读者留下了无尽的想象空间。
+
+【✍️ 写作手法】
+以近写远：用"一水间"、"只隔"强调距离之近，反衬不能归家之远
+以乐景写哀情：生机勃勃的春色衬托无法归家的惆怅
+炼字典范："绿"字改了十几次，终成诗眼
+借景抒情：明月自古是乡愁的寄托
+情景交融：景为情设、情随景生
+
+【🌟 "绿"字的炼字故事】
+"绿"字是千古炼字的巅峰。王安石弃"到、过、入、满"等十余字反复推敲，终择"绿"字——化静为动，既绘出江南春草破土、绿意漫卷的鲜活景致，又让无形春风有了具象生命力，一字便让万里春色跃然纸上。这炼字的背后，是对文字的极致敬畏，是反复打磨、精益求精的治学态度。"绿"字的妙处：a.春风有色，它染绿了江南，给人一种鲜明的形象感、色彩感和生机感；b."绿"字和"还"字有一种内在的联系，明媚的春光更能引发诗人想回家看看的冲动；c.其他文字只表达春风的到来，却没表现春天到来后千里江岸一片新绿的景物变化。
+
+【🇨🇳 主题升华】
+王安石的思乡，从非单纯儿女情长。彼时他力推变法、心系苍生，虽身泊瓜洲，心却牵系家国社稷。"明月何时照我还"的追问，既是对故乡钟山的眷恋，更是对家国安定、变法有成的期盼。个人的思乡柔肠，与心怀天下的家国情怀相融，让这首小诗跳出普通思乡诗的格局，多了一份厚重担当。
+
+【❤️ 核心主题】
+这首诗以"近"写"远"——京口瓜洲一水之隔，钟山只隔数重山，明明离家很近，却因为公务在身无法回去。春风又绿江南岸，美景更添乡愁，最终化为一句"明月何时照我还"，道尽思乡之情。同时，这首诗还融入了王安石心系家国社稷的厚重情怀。
+
+【💬 常见问题参考】
+- 问：这首诗哪个字用得最好？
+  答：当然是"绿"字！这是千古炼字的巅峰。王安石弃"到、过、入、满"等十余字反复推敲，终择"绿"字——化静为动，让春风有了具象生命力！
+- 问：春风又绿江南岸好在哪里？
+  答：一个"绿"字把春风写活了！我们能看到江南两岸瞬间披上绿装的动态过程。而"又"字点明时间流逝——春天年复一年来了，诗人却依然漂泊在外，是以乐景写哀情的典范！
+- 问：诗人是怎么表达思乡之情的？
+  答：诗人先用"一水间"、"只隔数重山"反复强调离家很近，但"近"反而更显"远"——近的是距离，远的是归期。最后望月发问"何时照我还"，把乡愁推向顶点。
+- 问：王安石变法是什么？
+  答：王安石变法是北宋神宗时期由王安石主导的一场全面改革，包括青苗法、募役法、农田水利法等，旨在富国强兵、振兴国力。这是北宋历史上的重要事件，王安石作为唐宋八大家之一，不仅是文学家，更是杰出的政治家。
+- 问：王安石是个怎样的人？
+  答：王安石是个非常厉害的人！他是唐宋八大家之一，文章诗词都写得好，还当过宰相推行变法。他才华横溢但也充满争议，是北宋时期最具影响力的人物之一。
+
+【🎯 教学重点与难点】
+教学重点：想象意境，领会诗情，品味诗句
+教学难点：体会诗人的思乡怀亲的思想感情，领悟作者的表达方法
+核心关键字：又、绿、还
+
+【📚 学习古诗方法】
+一读通其文：正确、流利、有感情地朗读
+二品其意：结合注释品味诗句含义
+三读悟诗情：想象意境，体会诗人感情
+四读诵其韵：带感情朗诵，注意音调、停顿、节奏韵味
+
+【🎯 回答要求】
+1. 语气亲切温柔，像一位有学问的好朋友
+2. 回答要生动有趣，结合语料库内容进行讲解
+3. 可以适当扩展相关知识，但不要跑题太远
+4. 遇到问题时，用语料库内容解释清楚，帮助用户理解
+5. 回答后要引导用户继续进行背诵练习
+6. 如果用户问正经知识（如历史、诗人等），可以给出基于历史事实的回答
+7. 【必须遵守】引导用户回到《泊船瓜洲》的学习上
+
+【🔄 经常主动提问（覆盖所有知识点）】
+- "你觉得这首诗哪个字用得最妙呀？"
+- "为什么诗人觉得只是一水之隔呢？"
+- "为什么不说春风又过江南岸，而说绿呢？"
+- "你想想看，月亮代表什么意思呀？"
+- "你觉得诗人想不想回家呢？"
+- "为什么春天来了，诗人却更愁了呢？"
+- "你觉得'只隔'两个字妙在哪里？"
+- "实际距离和心理距离为什么会有反差呢？"
+- "用美景写愁的手法叫什么呀？"
+- "学习古诗有哪几个步骤呀？"`,
+
+            init() {
+                this.loadConfig();
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.restoreProgress();
+                this.updatePoemLineStyles();
+                this.updateQuickReplies();
+            },
+
+            loadConfig() {
+                try {
+                    const saved = localStorage.getItem('poetry_config');
+                    if (saved) {
+                        this.config = JSON.parse(saved);
+                        document.getElementById('backendUrlInput').value = this.config.backendUrl || 'http://localhost:8000';
+                    }
+                    const modeBtns = document.querySelectorAll('.mode-btn');
+                    modeBtns.forEach(btn => {
+                        btn.classList.remove('bg-blue-100', 'text-blue-700');
+                        btn.classList.add('bg-[var(--stone)]', 'text-[var(--text-medium)]');
+                        if (btn.dataset.mode === this.config.mode) {
+                            btn.classList.remove('bg-[var(--stone)]', 'text-[var(--text-medium)]');
+                            btn.classList.add('bg-blue-100', 'text-blue-700');
+                        }
+                    });
+                } catch (e) {}
+                this.loadVoiceList();
+            },
+
+            loadVoiceList() {
+                const voiceSelect = document.getElementById('voiceSelect');
+                if (!voiceSelect) return;
+                
+                const loadVoices = () => {
+                    const voices = window.speechSynthesis?.getVoices() || [];
+                    voiceSelect.innerHTML = '<option value="auto">自动选择最佳语音</option>';
+                    
+                    const zhVoices = voices.filter(v => v.lang.includes('zh'));
+                    const otherVoices = voices.filter(v => !v.lang.includes('zh'));
+                    
+                    const allVoices = [...zhVoices, ...otherVoices];
+                    
+                    allVoices.forEach((voice, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        voiceSelect.appendChild(option);
+                    });
+                    
+                    if (this.config.voiceIndex !== undefined) {
+                        voiceSelect.value = this.config.voiceIndex;
+                    }
+                };
+                
+                loadVoices();
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.onvoiceschanged = loadVoices;
+                }
+            },
+
+            restoreProgress() {
+                try {
+                    const saved = localStorage.getItem('learnedLines');
+                    const savedStudent = localStorage.getItem('currentStudent');
+                    const savedStudentProgress = localStorage.getItem('lastProgressStudent');
+                    
+                    if (saved && savedStudentProgress === savedStudent) {
+                        this.learnedLines = parseInt(saved);
+                    } else {
+                        this.learnedLines = 0;
+                        localStorage.setItem('learnedLines', '0');
+                    }
+                    localStorage.setItem('lastProgressStudent', savedStudent || '');
+                } catch (e) {
+                    this.learnedLines = 0;
+                }
+                this.updateProgress();
+            },
+
+            saveProgress() {
+                localStorage.setItem('learnedLines', this.learnedLines.toString());
+
+                const studentKey = localStorage.getItem('currentStudent') || 'default';
+                const studentName = localStorage.getItem('currentStudentName') || '';
+                const progressData = {
+                    name: studentName,
+                    learnedLines: this.learnedLines,
+                    lastLine: this.currentReciteIndex,
+                    recitationCount: this.recitationCount || 0,
+                    lastStudyTime: new Date().toISOString()
+                };
+
+                fetch('http://localhost:8000/api/save_progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentKey: studentKey,
+                        progress: progressData
+                    })
+                }).then(r => r.json()).then(data => {
+                    console.log('Progress saved to chugu:', data);
+                }).catch(e => {
+                    console.log('Failed to save to server, using localStorage only');
+                });
+            },
+
+            initSpeechRecognition() {
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SR) return;
+                this.recognition = new SR();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'zh-CN';
+                this.recognition.maxAlternatives = 1;
+
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    document.getElementById('speakButton').classList.add('listening');
+                    document.getElementById('listeningIndicator').classList.remove('hidden');
+                    document.getElementById('micHint').textContent = '请说话...';
+                    document.getElementById('aiMood').textContent = '倾听中...';
+                };
+
+                this.recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    if (finalTranscript.trim()) {
+                        this.stopListening();
+                        this.handleUserInput(finalTranscript.trim());
+                    }
+                };
+
+                this.recognition.onerror = (event) => {
+                    if (event.error === 'aborted' || event.error === 'no-speech') {
+                        this.stopListening();
+                        return;
+                    }
+                    this.stopListening();
+                    if (event.error === 'not-allowed') {
+                        this.addAIMessage("请允许使用麦克风哦！在浏览器地址栏左侧点击锁图标，允许麦克风权限。");
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    if (this.isListening) {
+                        this.isListening = false;
+                        document.getElementById('speakButton').classList.remove('listening');
+                        document.getElementById('listeningIndicator').classList.add('hidden');
+                        document.getElementById('micHint').textContent = '点击麦克风或输入文字';
+                        if (!this.isAISpeaking) {
+                            document.getElementById('aiMood').textContent = '等待中...';
+                        }
+                    }
+                };
+            },
+
+            startListening() {
+                if (this.isAISpeaking || this.isListening) return;
+                if (!this.recognition) {
+                    this.initSpeechRecognition();
+                    if (!this.recognition) {
+                        this.addAIMessage("浏览器不支持语音识别，请使用Chrome或Edge浏览器，或使用下方文字输入。");
+                        return;
+                    }
+                }
+                try {
+                    this.recognition.start();
+                } catch (e) {
+                    this.recognition = null;
+                    this.initSpeechRecognition();
+                    try { this.recognition.start(); } catch (e2) {}
+                }
+            },
+
+            stopListening() {
+                this.isListening = false;
+                document.getElementById('speakButton').classList.remove('listening');
+                document.getElementById('listeningIndicator').classList.add('hidden');
+                document.getElementById('micHint').textContent = '点击麦克风或输入文字';
+                if (this.recognition) {
+                    try { this.recognition.stop(); } catch (e) {}
+                }
+                if (!this.isAISpeaking) {
+                    document.getElementById('aiMood').textContent = '等待中...';
+                }
+            },
+
+            toggleListening() {
+                if (this.isAISpeaking) {
+                    if (!this.confirmStopClick) {
+                        this.confirmStopClick = true;
+                        document.getElementById('aiMood').textContent = '再次点击确认打断';
+                        setTimeout(() => {
+                            this.confirmStopClick = false;
+                            if (this.isAISpeaking) {
+                                document.getElementById('aiMood').textContent = '说话中...';
+                            }
+                        }, 2000);
+                        return;
+                    }
+                    this.cancelAISpeech();
+                    setTimeout(() => {
+                        if (!this.isAISpeaking && !this.isListening) {
+                            this.startListening();
+                        }
+                    }, 1000);
+                    return;
+                }
+                this.isListening ? this.stopListening() : this.startListening();
+            },
+
+            cancelAISpeech() {
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                this.isAISpeaking = false;
+                document.getElementById('speakButton').classList.remove('ai-speaking');
+                document.getElementById('aiMood').textContent = '等待中...';
+                if (this.pendingCallback) {
+                    const cb = this.pendingCallback;
+                    this.pendingCallback = null;
+                    cb();
+                }
+            },
+
+            speakText(text, onFinishCallback = null) {
+                this.stopListening();
+                this.isAISpeaking = true;
+                this.pendingCallback = onFinishCallback;
+                document.getElementById('aiMood').textContent = '说话中...';
+                document.getElementById('speakButton').classList.add('ai-speaking');
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+                if (!('speechSynthesis' in window)) {
+                    this.isAISpeaking = false;
+                    this.pendingCallback = null;
+                    document.getElementById('speakButton').classList.remove('ai-speaking');
+                    document.getElementById('aiMood').textContent = '等待中...';
+                    if (onFinishCallback) onFinishCallback();
+                    return;
+                }
+
+                try {
+                    const cleanText = this.removeEmoji(text);
+                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                    utterance.lang = 'zh-CN';
+                    utterance.rate = 0.85;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+
+                    const voices = window.speechSynthesis.getVoices();
+                    let selectedVoice = null;
+
+                    const voiceSelect = document.getElementById('voiceSelect');
+                    if (voiceSelect && voiceSelect.value !== 'auto') {
+                        const voiceIndex = parseInt(voiceSelect.value);
+                        if (!isNaN(voiceIndex) && voices[voiceIndex]) {
+                            selectedVoice = voices[voiceIndex];
+                        }
+                    }
+
+                    if (!selectedVoice && voices.length > 0) {
+                        const preferredVoices = [
+                            v => v.lang === 'zh-CN' && v.name.includes('Xiaoxiao'),
+                            v => v.lang === 'zh-CN' && v.name.includes('Yaoyao'),
+                            v => v.lang === 'zh-CN' && v.name.includes('Luna'),
+                            v => v.lang === 'zh-CN' && v.name.includes('Meimei'),
+                            v => v.lang.includes('zh') && v.name.includes('Female'),
+                            v => v.lang.includes('zh') && !v.name.includes('Male'),
+                            v => v.lang.includes('zh')
+                        ];
+
+                        for (const filter of preferredVoices) {
+                            selectedVoice = voices.find(filter);
+                            if (selectedVoice) break;
+                        }
+                    }
+
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                        utterance.lang = selectedVoice.lang;
+                    } else if (voices.length > 0) {
+                        utterance.voice = voices[0];
+                    }
+
+                    const finishHandler = () => {
+                        this.isAISpeaking = false;
+                        this.pendingCallback = null;
+                        document.getElementById('speakButton').classList.remove('ai-speaking');
+                        document.getElementById('aiMood').textContent = '等待中...';
+                        if (onFinishCallback) onFinishCallback();
+                    };
+
+                    utterance.onend = finishHandler;
+                    utterance.onerror = finishHandler;
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.error('Speech synthesis error:', e);
+                    this.isAISpeaking = false;
+                    this.pendingCallback = null;
+                    document.getElementById('speakButton').classList.remove('ai-speaking');
+                    document.getElementById('aiMood').textContent = '等待中...';
+                    if (onFinishCallback) onFinishCallback();
+                }
+            },
+
+            removeEmoji(text) {
+                return text.replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/\*(.*?)\*/g, '$1')
+                    .replace(/`(.*?)`/g, '$1')
+                    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+                    .replace(/\*\*/g, '')
+                    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '').replace(/[\u{2600}-\u{26FF}]/gu, '')
+                    .replace(/[\u{2700}-\u{27BF}]/gu, '').replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+                    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '').replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+                    .replace(/[🎯📖👤✨📝💡🎤⏭✕🧑‍🏫🤖👦🌟❌✅🔗🔄✏️🎮📊👀📅🏆📜💬]/gu, '')
+                    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                    .replace(/——/g, '，').replace(/—/g, '，')
+                    .replace(/\([^)]*\)/g, (m) => m.replace(/[a-zA-Z]/g, ''))
+                    .replace(/（[^）]*）/g, (m) => m.replace(/[a-zA-Z]/g, ''))
+                    .replace(/[\u3000-\u303F]/g, (m) => {
+                        const map = {'\u3000':' ','\u3001':'，','\u3002':'。','\uff0c':',','\uff0e':'.','\uff01':'!','\uff1f':'?'};
+                        return map[m] || m;
+                    })
+                    .replace(/[""''「」『』【】\[\]（）\(\)]/g, (m) => {
+                        const map = {'"':'', '"':'', "'":'', "「":'', "」":'', "『":'', "』":'', "【":'', "】":'', "[":'', "]":'', "（":'', "）":'', "(":'', ")":''};
+                        return map[m] || m;
+                    })
+                    .replace(/\s+/g, ' ').trim();
+            },
+
+            renderMarkdown(text) {
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`(.*?)`/g, '<code>$1</code>');
+            },
+
+            stripMarkdownForSpeech(text) {
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/\*(.*?)\*/g, '$1')
+                    .replace(/`(.*?)`/g, '$1')
+                    .replace(/\[(.*?)\]\(.*?\)/g, '$1');
+            },
+
+            addAIMessage(text, type = 'normal') {
+                this.lastAIMessage = text;
+                const chatArea = document.getElementById('chatArea');
+                const div = document.createElement('div');
+                div.className = 'flex gap-3';
+                const bgClass = type === 'warning' ? 'chat-bubble-system' : 'chat-bubble-ai';
+                const renderedText = this.renderMarkdown(text);
+                div.innerHTML = `<div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-xs flex-shrink-0">🤖</div><div class="${bgClass}"><p class="text-[var(--text-dark)]" style="font-size: 16px;">${renderedText}</p></div>`;
+                chatArea.appendChild(div);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            },
+
+            addTypingIndicator() {
+                const chatArea = document.getElementById('chatArea');
+                const div = document.createElement('div');
+                div.className = 'flex gap-3';
+                div.id = 'typingIndicator';
+                div.innerHTML = `<div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-xs flex-shrink-0">🤖</div><div class="chat-bubble-ai"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+                chatArea.appendChild(div);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            },
+
+            removeTypingIndicator() {
+                const el = document.getElementById('typingIndicator');
+                if (el) el.remove();
+            },
+
+            addUserMessage(text) {
+                const chatArea = document.getElementById('chatArea');
+                const div = document.createElement('div');
+                div.className = 'flex gap-3 justify-end';
+                div.innerHTML = `<div class="chat-bubble-user"><p class="text-[var(--text-dark)]" style="font-size: 16px;">${text}</p></div><div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs flex-shrink-0 text-white">👦</div>`;
+                chatArea.appendChild(div);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            },
+
+            addReciteCard(lineIndex) {
+                const oldCard = document.getElementById(this.currentReciteCardId);
+                if (oldCard) {
+                    const oldDisplay = oldCard.querySelector('[data-recite-chars]');
+                    if (oldDisplay) oldDisplay.removeAttribute('id');
+                }
+
+                const chatArea = document.getElementById('chatArea');
+                const lineText = this.POEM_DATA.content[lineIndex];
+                const lineNum = lineIndex + 1;
+                const cardId = 'reciteCard_' + Date.now();
+                this.currentReciteCardId = cardId;
+
+                const div = document.createElement('div');
+                div.className = 'flex gap-3';
+                div.id = cardId;
+
+                let charsHtml = '';
+                for (const char of lineText) {
+                    charsHtml += `<span class="recite-char hint">?</span>`;
+                }
+
+                div.innerHTML = `<div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-xs flex-shrink-0">🤖</div>
+                    <div class="recite-card flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-bold text-amber-700" style="font-size: 15px;">🎯 请背诵第${lineNum}句</span>
+                            <span class="text-amber-600" style="font-size: 13px;">第${lineNum}/4句</span>
+                        </div>
+                        <div data-recite-chars id="reciteCharsDisplay" class="flex flex-wrap justify-center gap-1">${charsHtml}</div>
+                        <div data-recite-hint class="hidden mt-3 p-3 bg-blue-50 rounded-xl text-center">
+                            <span data-recite-hint-text class="text-blue-700" style="font-size: 15px;"></span>
+                        </div>
+                    </div>`;
+                chatArea.appendChild(div);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            },
+
+            updateReciteCardChars(lineIndex, results) {
+                const card = document.getElementById(this.currentReciteCardId);
+                if (!card) return;
+                const display = card.querySelector('[data-recite-chars]');
+                if (!display) return;
+                const lineText = this.POEM_DATA.content[lineIndex];
+                display.innerHTML = '';
+                for (let i = 0; i < lineText.length; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'recite-char';
+                    if (results && results[i]) {
+                        span.textContent = lineText[i];
+                        span.classList.add(results[i]);
+                    } else {
+                        span.textContent = '?';
+                        span.classList.add('hint');
+                    }
+                    display.appendChild(span);
+                }
+            },
+
+            showReciteHintInCard(hint) {
+                const card = document.getElementById(this.currentReciteCardId);
+                if (!card) return;
+                const hintArea = card.querySelector('[data-recite-hint]');
+                const hintText = card.querySelector('[data-recite-hint-text]');
+                if (hintArea && hintText) {
+                    hintArea.classList.remove('hidden');
+                    hintText.textContent = hint;
+                }
+            },
+
+            updateProgress() {
+                const progress = (this.learnedLines / this.POEM_DATA.content.length) * 100;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('learnedCount').textContent = `已学 ${this.learnedLines}/4 句`;
+                if (this.learnedLines >= 4) document.getElementById('stars').textContent = '★★★';
+                else if (this.learnedLines >= 3) document.getElementById('stars').textContent = '★★☆';
+                else if (this.learnedLines >= 1) document.getElementById('stars').textContent = '★☆☆';
+                else document.getElementById('stars').textContent = '☆☆☆';
+            },
+
+            updatePoemLineStyles() {
+                document.querySelectorAll('.poem-line').forEach((el, i) => {
+                    el.classList.remove('active', 'completed');
+                    if (this.state === 'RECITING' && i < this.currentReciteIndex) el.classList.add('completed');
+                    else if (this.state === 'RECITING' && i === this.currentReciteIndex) el.classList.add('active');
+                    else if (i < this.learnedLines) el.classList.add('completed');
+                });
+            },
+
+            updateQuickReplies() {
+                const container = document.getElementById('quickReplies');
+                if (this.state === 'RECITING') {
+                    container.innerHTML = `
+                        <button class="quick-btn" data-text="提示一下">💡 提示</button>
+                        <button class="quick-btn" data-text="跳过这句">⏭ 跳过</button>
+                        <button class="quick-btn" data-text="退出背诵">✕ 退出</button>
+                    `;
+                } else if (this.state === 'SELECTING_LEVEL') {
+                    container.innerHTML = `
+                        <button class="quick-btn" data-text="完全不熟悉">🤔 完全不熟悉</button>
+                        <button class="quick-btn" data-text="有些熟悉">📚 有些熟悉</button>
+                        <button class="quick-btn" data-text="完全熟悉">⭐ 完全熟悉</button>
+                        <button class="quick-btn" data-text="退出背诵">✕ 退出</button>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <button class="quick-btn" data-text="这首诗什么意思？">📖 诗的意思</button>
+                        <button class="quick-btn" data-text="作者是谁？">👤 作者介绍</button>
+                        <button class="quick-btn" data-text="哪个字用得最好？">✨ 名句赏析</button>
+                        <button class="quick-btn" data-text="开始背诵">🎯 开始背诵</button>
+                        <button class="quick-btn" data-text="教我背诗">📝 教我背诗</button>
+                        <button class="quick-btn" data-text="__game">🎮 游戏</button>
+                        <button class="quick-btn" data-text="__replay">🔊 重播</button>
+                    `;
+                }
+                container.querySelectorAll('.quick-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.handleUserInput(btn.dataset.text));
+                });
+            },
+
+            showReciteControls(show) {
+                document.getElementById('hintBtn').classList.toggle('hidden', !show);
+                document.getElementById('skipBtn').classList.toggle('hidden', !show);
+                const reciteStatus = document.getElementById('reciteStatus');
+                reciteStatus.classList.toggle('hidden', !show);
+                reciteStatus.style.display = show ? 'flex' : 'none';
+                if (show) {
+                    document.getElementById('reciteLineInfo').textContent = `第${this.currentReciteIndex + 1}/4句`;
+                }
+            },
+
+            anyMatch(input, keywords) {
+                return keywords.some(k => input.includes(k));
+            },
+
+            getLocalAIResponse(input) {
+                const inp = input.toLowerCase();
+
+                if (this.anyMatch(inp, ['你好', '嗨', '哈喽', 'hi', 'hello'])) {
+                    return "你好呀！我是泊船瓜洲小助手🧑‍🏫 今天我们来学王安石的《泊船瓜洲》。这首诗只有四句，但句句经典，特别是\"春风又绿江南岸\"中的\"绿\"字，堪称千古炼字的典范！";
+                }
+
+                if (this.anyMatch(inp, ['什么意思', '讲什么', '解释', '翻译', '整体', '概括'])) {
+                    return this.CORPUS.overall_intro + " " + this.CORPUS.theme;
+                }
+
+                if (this.anyMatch(inp, ['作者', '王安石', '谁写'])) {
+                    return "王安石（1021-1086），字介甫，号半山，北宋临川人。唐宋八大家之一，还当过宰相，主导了著名的\"王安石变法\"！" + this.CORPUS.theme_analysis;
+                }
+
+                if (this.anyMatch(inp, ['哪个字', '最好', '名句', '赏析', '诗眼', '炼字', '绿字'])) {
+                    return "当然是\"绿\"字！" + this.CORPUS.lines[2].interpretation + " 王安石为了这个字改了十几次，原来用过\"到\"\"过\"\"满\"，最后才定为\"绿\"——春风把江南都吹绿了！这就是千古名句的妙处！";
+                }
+
+                if (this.anyMatch(inp, ['背景', '为什么写', '什么时候写', '写作背景'])) {
+                    return "1076年，王安石第二次当宰相后奉旨进京，路过瓜洲渡口。他站在船上望见对岸家乡钟山，春风正好吹绿了江南岸，思乡之情涌上心头，写下了这首诗。" + this.CORPUS.writing_background;
+                }
+
+                if (this.anyMatch(inp, ['技巧', '写作手法', '写法', '表现手法'])) {
+                    const techs = this.CORPUS.writing_techniques;
+                    return "这首诗的写作手法非常精彩：\n" + techs.map((t, i) => `${i+1}. ${t}`).join('\n');
+                }
+
+                if (this.anyMatch(inp, ['第一句', '京口', '一水间']) && !this.anyMatch(inp, ['第二句', '第三句', '第四句'])) {
+                    this.learnedLines = Math.max(this.learnedLines, 1);
+                    this.updateProgress(); this.saveProgress();
+                    const line = this.CORPUS.lines[0];
+                    return `「${line.text}」——${line.analysis}\n\n💡 写作手法：${line.writing_technique}`;
+                }
+                if (this.anyMatch(inp, ['第二句', '钟山', '数重山'])) {
+                    this.learnedLines = Math.max(this.learnedLines, 2);
+                    this.updateProgress(); this.saveProgress();
+                    const line = this.CORPUS.lines[1];
+                    return `「${line.text}」——${line.analysis}\n\n💡 写作手法：${line.writing_technique}`;
+                }
+                if (this.anyMatch(inp, ['第三句', '春风', '绿', '江南岸'])) {
+                    this.learnedLines = Math.max(this.learnedLines, 3);
+                    this.updateProgress(); this.saveProgress();
+                    const line = this.CORPUS.lines[2];
+                    return `「${line.text}」——${line.analysis}\n\n💡 写作手法：${line.writing_technique}`;
+                }
+                if (this.anyMatch(inp, ['第四句', '明月', '我还'])) {
+                    this.learnedLines = Math.max(this.learnedLines, 4);
+                    this.updateProgress(); this.saveProgress();
+                    const line = this.CORPUS.lines[3];
+                    return `「${line.text}」——${line.analysis}\n\n💡 写作手法：${line.writing_technique}`;
+                }
+
+                if (this.anyMatch(inp, ['不知道', '不懂', '难', '不会'])) {
+                    return "没关系！学诗就是要慢慢来。我们从第一句开始：「京口瓜洲一水间」，京口和瓜洲之间只隔着一条长江，你记住了吗？";
+                }
+                if (this.anyMatch(inp, ['教我背', '怎么背', '背诵方法'])) {
+                    return "背诗有妙招！先理解每句的意思，再想象画面：第一句想象站在江边看对岸，第二句想到家乡就在山那边，第三句感受春风吹绿大地，第四句抬头望月想家。要开始背诵吗？";
+                }
+
+                for (const qa of this.CORPUS.dialogue_qa) {
+                    if (this.anyMatch(inp, qa.question.split('').slice(0, 5))) {
+                        return qa.answer;
+                    }
+                }
+
+                if (this.anyMatch(inp, ['关键词', '重点字词', '字词解释'])) {
+                    const words = this.CORPUS.key_words;
+                    return "这首诗的重点字词：\n" + Object.entries(words).map(([k, v]) => `• ${k}：${v}`).join('\n');
+                }
+
+                const defaults = [
+                    "你想了解哪一句呢？可以问我诗句的意思、写作手法，或者\"绿\"字为什么用得最好哦！",
+                    "要不要试试开始背诵？点击下方麦克风或快捷按钮！",
+                    "你知道\"绿\"字为什么用得最妙吗？问我试试！",
+                    "想了解这首诗的写作背景吗？"
+                ];
+                return defaults[Math.floor(Math.random() * defaults.length)];
+            },
+
+            async getDeepSeekAIResponse(input) {
+                try {
+                    this.addTypingIndicator();
+
+                    const messages = [
+                        { role: 'system', content: this.SYSTEM_PROMPT }
+                    ];
+
+                    const recentHistory = this.conversationHistory.slice(-10);
+                    messages.push(...recentHistory);
+                    messages.push({ role: 'user', content: input });
+
+                    const url = `${this.config.backendUrl}/api/chat`;
+                    console.log('Calling DeepSeek API:', url);
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ messages })
+                    });
+
+                    this.removeTypingIndicator();
+
+                    if (!response.ok) {
+                        console.error('DeepSeek API HTTP error:', response.status, response.statusText);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('DeepSeek API response:', data);
+
+                    if (data.error) {
+                        console.error('DeepSeek API error:', data.error);
+                        throw new Error(data.error.message || data.error);
+                    }
+
+                    const aiText = data.choices?.[0]?.message?.content || '';
+
+                    if (!aiText) {
+                        console.warn('DeepSeek returned empty response');
+                        throw new Error('AI返回了空响应');
+                    }
+
+                    this.conversationHistory.push({ role: 'user', content: input });
+                    this.conversationHistory.push({ role: 'assistant', content: aiText });
+
+                    if (this.conversationHistory.length > 20) {
+                        this.conversationHistory = this.conversationHistory.slice(-16);
+                    }
+
+                    return aiText;
+                } catch (error) {
+                    this.removeTypingIndicator();
+                    console.error('DeepSeek API error:', error);
+                    this.addAIMessage(`[DeepSeek连接问题] ${error.message}，请检查后端服务是否运行。`, 'warning');
+                    return null;
+                }
+            },
+
+            async handleUserInput(text) {
+                if (!text.trim()) return;
+
+                if (text === '__replay') {
+                    if (this.lastAIMessage) {
+                        this.speakText(this.lastAIMessage);
+                    } else {
+                        this.addAIMessage("还没有消息可以重播哦！");
+                    }
+                    return;
+                }
+
+                if (text === '__game') {
+                    this.showGameMenu();
+                    return;
+                }
+
+                this.addUserMessage(text);
+
+                if (this.state === 'RECITING') {
+                    await this.handleReciteInput(text);
+                    return;
+                }
+
+                if (this.anyMatch(text, ['开始背诵', '背诗', '背诵挑战', '我要背'])) {
+                    await this.startRecitation();
+                    return;
+                }
+
+                if (this.config.mode === 'deepseek') {
+                    const response = await this.getDeepSeekAIResponse(text);
+                    if (response) {
+                        this.addAIMessage(response);
+                        this.speakText(response);
+                    } else {
+                        const fallback = this.getLocalAIResponse(text);
+                        this.addAIMessage(fallback);
+                        this.speakText(fallback);
+                    }
+                } else {
+                    const response = this.getLocalAIResponse(text);
+                    this.addAIMessage(response);
+                    this.speakText(response);
+                }
+            },
+
+            async startRecitation() {
+                this.state = 'RECITING';
+                this.currentReciteIndex = 0;
+                this.conversationHistory = [];
+                this.updatePoemLineStyles();
+                this.showReciteControls(true);
+                this.updateQuickReplies();
+
+                this.addReciteCard(0);
+
+                if (this.config.mode === 'deepseek') {
+                    const prompt = "用户正在背诵《泊船瓜洲》的模式！你的核心任务：1. 引导用户完成整首诗的背诵 2. 用语料库内容生动解释诗句帮助理解 3. 无论用户说什么，最终都要引导回背诵练习 4. 严格基于语料库，绝对不编造！现在开始第一句，请简短鼓励引导。";
+                    const response = await this.getDeepSeekAIResponse(prompt);
+                    if (response) {
+                        this.addAIMessage(response);
+                        this.speakText(response, () => this.startListening());
+                    } else {
+                        this.addAIMessage("好！开始背诵！第一句描写京口和瓜洲隔江相望，试试看吧！🎤");
+                        this.speakText("好！开始背诵！第一句描写京口和瓜洲隔江相望，试试看吧！", () => this.startListening());
+                    }
+                } else {
+                    this.addAIMessage("好！开始背诵！第一句描写京口和瓜洲隔江相望，试试看吧！🎤");
+                    this.speakText("好！开始背诵！第一句描写京口和瓜洲隔江相望，试试看吧！", () => this.startListening());
+                }
+                this.startReciteTimer();
+            },
+
+            stopRecitation() {
+                clearTimeout(this.reciteTimeout);
+                this.state = 'IDLE';
+                this.currentReciteIndex = 0;
+                this.currentReciteCardId = null;
+                this.stopListening();
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+                this.isAISpeaking = false;
+                this.showReciteControls(false);
+                this.updateQuickReplies();
+                this.updatePoemLineStyles();
+
+                this.addAIMessage("背诵已退出。想继续学习随时告诉我哦！");
+            },
+
+            startReciteTimer() {
+                clearTimeout(this.reciteTimeout);
+                this.reciteTimeout = setTimeout(() => {
+                    if (!this.isListening && !this.isAISpeaking && this.state === 'RECITING') {
+                        this.giveReciteHint();
+                    }
+                }, 15000);
+            },
+
+            async giveReciteHint() {
+                const lineText = this.POEM_DATA.content[this.currentReciteIndex];
+                const lineNum = this.currentReciteIndex + 1;
+
+                if (this.config.mode === 'deepseek') {
+                    const prompt = `用户背《泊船瓜洲》第${lineNum}句「${lineText}」时忘了。给一个生动提示，不要说出答案。不超过30字。`;
+                    const response = await this.getDeepSeekAIResponse(prompt);
+                    if (response) {
+                        this.showReciteHintInCard(response);
+                        this.addAIMessage(response);
+                        this.speakText(response, () => {
+                            this.startListening();
+                        });
+                    } else {
+                        this.giveLocalHint();
+                    }
+                } else {
+                    this.giveLocalHint();
+                }
+                this.startReciteTimer();
+            },
+
+            giveLocalHint() {
+                const hints = this.CORPUS.hints[this.currentReciteIndex];
+                const hint = hints[Math.floor(Math.random() * hints.length)];
+
+                this.showReciteHintInCard(hint);
+                this.addAIMessage(`💡 提示：${hint}`);
+                this.speakText(`提示：${hint}`, () => {
+                    this.startListening();
+                });
+            },
+
+            async handleReciteInput(text) {
+                clearTimeout(this.reciteTimeout);
+
+                if (this.anyMatch(text, ['提示', '提示一下', '忘了', '想不起来'])) {
+                    await this.giveReciteHint();
+                    return;
+                }
+                if (this.anyMatch(text, ['跳过', '跳过这句', '下一句'])) {
+                    await this.skipCurrentLine();
+                    return;
+                }
+                if (this.anyMatch(text, ['退出背诵', '退出', '不背了', '结束背诵'])) {
+                    this.stopRecitation();
+                    return;
+                }
+
+                const matchResult = this.checkRecitation(text);
+                if (matchResult === 'correct') {
+                    await this.handleCorrectRecitation(text);
+                } else if (matchResult === 'wrong') {
+                    await this.handleWrongRecitation(text);
+                } else {
+                    if (this.config.mode === 'deepseek') {
+                        const lineText = this.POEM_DATA.content[this.currentReciteIndex];
+                        const lineNum = this.currentReciteIndex + 1;
+                        const prompt = `用户正在背诵《泊船瓜洲》第${lineNum}句「${lineText}」，但说了「${text}」。请温和地引导用户回到背诵，不要说出答案。不超过30字。`;
+                        const response = await this.getDeepSeekAIResponse(prompt);
+                        if (response) {
+                            this.addAIMessage(response);
+                            this.speakText(response, () => {
+                                this.startListening();
+                            });
+                        } else {
+                            this.addAIMessage(`我们在背诵第${this.currentReciteIndex + 1}句哦，再试试？`);
+                            this.speakText(`我们在背诵第${this.currentReciteIndex + 1}句哦，再试试？`, () => {
+                                this.startListening();
+                            });
+                        }
+                    } else {
+                        this.addAIMessage(`我们在背诵第${this.currentReciteIndex + 1}句哦，再试试？如果忘了可以说"提示"。`);
+                        this.speakText(`我们在背诵第${this.currentReciteIndex + 1}句哦，再试试？`, () => {
+                            this.startListening();
+                        });
+                    }
+                    this.startReciteTimer();
+                }
+            },
+
+            checkRecitation(text) {
+                if (this.currentReciteIndex >= this.POEM_DATA.content.length) return 'wrong';
+                const targetLine = this.POEM_DATA.content[this.currentReciteIndex];
+
+                const cleanText = text.replace(/[，。！？、\s，。、……]/g, '');
+                const cleanTarget = targetLine.replace(/[，。！？、\s，。、……]/g, '');
+
+                if (cleanText === cleanTarget) return 'correct';
+
+                if (cleanText.includes(cleanTarget)) return 'correct';
+                if (cleanTarget.includes(cleanText) && cleanText.length >= 5) return 'correct';
+
+                let matchCount = 0;
+                let targetChars = cleanTarget.split('');
+                let textChars = cleanText.split('');
+
+                for (let tc of targetChars) {
+                    if (textChars.includes(tc)) matchCount++;
+                }
+
+                let maxSequential = 0;
+                for (let start = 0; start < targetChars.length; start++) {
+                    let seq = 0;
+                    let ti = start;
+                    for (let ui = 0; ti < targetChars.length && ui < textChars.length; ui++) {
+                        if (targetChars[ti] === textChars[ui]) {
+                            seq++;
+                            maxSequential = Math.max(maxSequential, seq);
+                            ti++;
+                        } else {
+                            seq = 0;
+                            ti = start;
+                        }
+                    }
+                }
+
+                const charMatchRate = matchCount / cleanTarget.length;
+                const seqMatchRate = maxSequential / cleanTarget.length;
+
+                if (charMatchRate >= 0.6 || seqMatchRate >= 0.5) return 'correct';
+                if (charMatchRate < 0.3 && cleanText.length > 3) return 'wrong';
+                return 'unclear';
+            },
+
+            async handleCorrectRecitation(userSaid) {
+                const lineText = this.POEM_DATA.content[this.currentReciteIndex];
+                const lineNum = this.currentReciteIndex + 1;
+                const isLastLine = this.currentReciteIndex >= this.POEM_DATA.content.length - 1;
+
+                this.updateReciteCardChars(this.currentReciteIndex,
+                    Array(lineText.length).fill('correct'));
+
+                this.learnedLines = Math.max(this.learnedLines, lineNum);
+                this.updateProgress();
+                this.saveProgress();
+                this.updatePoemLineStyles();
+
+                if (this.config.mode === 'deepseek') {
+                    const prompt = isLastLine
+                        ? `用户背完了《泊船瓜洲》全部4句！祝贺用户，简短总结诗意。不超过50字。`
+                        : `用户背对了第${lineNum}句！简短鼓励，引导背第${lineNum+1}句，不要说出诗句内容。不超过35字。`;
+                    const response = await this.getDeepSeekAIResponse(prompt);
+                    if (response) {
+                        this.addAIMessage(response);
+                        this.speakText(response, () => {
+                            if (isLastLine) this.finishRecitation();
+                            else this.advanceRecitation();
+                        });
+                        return;
+                    }
+                }
+
+                if (isLastLine) {
+                    this.addAIMessage("太棒了！整首《泊船瓜洲》都背下来了！🌟 你真厉害！");
+                    this.speakText("太棒了！整首诗都背下来了！你真厉害！", () => {
+                        this.finishRecitation();
+                    });
+                } else {
+                    const nextNum = lineNum + 1;
+                    const nextHints = [
+                        "下一句写诗人想象家乡就在不远处",
+                        "接着描写春风带来的美景",
+                        "最后表达思乡之情",
+                        "继续挑战下一句吧"
+                    ];
+                    const hint = nextHints[Math.min(nextNum - 1, nextHints.length - 1)];
+                    this.addAIMessage(`太棒了！第${lineNum}句对了！✅ ${hint}，继续加油！🎤`);
+                    this.speakText(`太棒了！第${lineNum}句对了！${hint}，继续加油！`, () => {
+                        this.advanceRecitation();
+                    });
+                }
+            },
+
+            advanceRecitation() {
+                this.currentReciteIndex++;
+                this.showReciteControls(true);
+                this.updateQuickReplies();
+                this.updatePoemLineStyles();
+                this.addReciteCard(this.currentReciteIndex);
+                this.startListening();
+                this.startReciteTimer();
+            },
+
+            finishRecitation() {
+                this.state = 'IDLE';
+                this.currentReciteIndex = 0;
+                this.currentReciteCardId = null;
+                this.showReciteControls(false);
+                this.updateQuickReplies();
+                this.updatePoemLineStyles();
+            },
+
+            async handleWrongRecitation(userSaid) {
+                const lineText = this.POEM_DATA.content[this.currentReciteIndex];
+                const lineNum = this.currentReciteIndex + 1;
+
+                const results = [];
+                for (let i = 0; i < lineText.length; i++) {
+                    results.push(userSaid.includes(lineText[i]) ? 'correct' : 'wrong');
+                }
+                this.updateReciteCardChars(this.currentReciteIndex, results);
+
+                setTimeout(() => {
+                    this.updateReciteCardChars(this.currentReciteIndex, null);
+                }, 1200);
+
+                if (this.config.mode === 'deepseek') {
+                    const prompt = `用户背《泊船瓜洲》第${lineNum}句「${lineText}」时说了「${userSaid}」，背错了。温柔鼓励，给一个小提示，不要说出答案。不超过30字。`;
+                    const response = await this.getDeepSeekAIResponse(prompt);
+                    if (response) {
+                        this.showReciteHintInCard(response);
+                        this.addAIMessage(response, 'warning');
+                        this.speakText(response, () => {
+                            this.startListening();
+                        });
+                        this.startReciteTimer();
+                        return;
+                    }
+                }
+
+                const hint = this.CORPUS.hints[this.currentReciteIndex][0];
+                this.showReciteHintInCard(hint);
+                this.addAIMessage(`不太对哦，再想想？💡 提示：${hint}`, 'warning');
+                this.speakText(`不太对哦，再想想？提示：${hint}`, () => {
+                    this.startListening();
+                });
+                this.startReciteTimer();
+            },
+
+            async skipCurrentLine() {
+                clearTimeout(this.reciteTimeout);
+                const lineText = this.POEM_DATA.content[this.currentReciteIndex];
+                const lineNum = this.currentReciteIndex + 1;
+                const isLastLine = this.currentReciteIndex >= this.POEM_DATA.content.length - 1;
+
+                this.updateReciteCardChars(this.currentReciteIndex,
+                    Array(lineText.length).fill('correct'));
+
+                this.learnedLines = Math.max(this.learnedLines, lineNum);
+                this.updateProgress();
+                this.saveProgress();
+                this.updatePoemLineStyles();
+
+                if (this.config.mode === 'deepseek') {
+                    const prompt = isLastLine
+                        ? `用户跳过了最后一句「${lineText}」。简短讲解这句诗意，祝贺学完。不超过40字。`
+                        : `用户跳过了第${lineNum}句「${lineText}」。简短讲解+引导背第${lineNum+1}句。不超过30字。`;
+                    const response = await this.getDeepSeekAIResponse(prompt);
+                    if (response) {
+                        this.addAIMessage(response);
+                        this.speakText(response, () => {
+                            if (isLastLine) this.finishRecitation();
+                            else this.advanceRecitation();
+                        });
+                        return;
+                    }
+                }
+
+                if (isLastLine) {
+                    this.addAIMessage(`第${lineNum}句是「${lineText}」——${this.CORPUS.lines[this.currentReciteIndex].analysis}。学完了，你真棒！`);
+                    this.speakText(`第${lineNum}句是${lineText}。学完了，你真棒！`, () => {
+                        this.finishRecitation();
+                    });
+                } else {
+                    this.addAIMessage(`第${lineNum}句是「${lineText}」——${this.CORPUS.lines[this.currentReciteIndex].analysis}。继续第${lineNum+1}句🎤`);
+                    this.speakText(`第${lineNum}句是${lineText}。继续背第${lineNum+1}句`, () => {
+                        this.advanceRecitation();
+                    });
+                }
+            },
+
+            bindEvents() {
+                document.getElementById('speakButton').addEventListener('click', () => this.toggleListening());
+
+                const hintBtn = document.getElementById('hintBtn');
+                const skipBtn = document.getElementById('skipBtn');
+                if (hintBtn && hintBtn.querySelector('button')) {
+                    hintBtn.querySelector('button').addEventListener('click', () => this.giveReciteHint());
+                }
+                if (skipBtn && skipBtn.querySelector('button')) {
+                    skipBtn.querySelector('button').addEventListener('click', () => this.skipCurrentLine());
+                }
+                document.getElementById('stopReciteBtn').addEventListener('click', () => this.stopRecitation());
+
+                document.getElementById('textInput').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const text = e.target.value.trim();
+                        if (text) {
+                            e.target.value = '';
+                            this.handleUserInput(text);
+                        }
+                    }
+                });
+
+                document.getElementById('sendBtn').addEventListener('click', () => {
+                    const input = document.getElementById('textInput');
+                    const text = input.value.trim();
+                    if (text) {
+                        input.value = '';
+                        this.handleUserInput(text);
+                    }
+                });
+
+                document.querySelectorAll('.poem-line').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const lineIndex = parseInt(el.dataset.line);
+                        if (this.state === 'RECITING') {
+                            this.addAIMessage(`正在背诵中！先完成当前挑战吧，或者说"退出背诵"结束。`, 'warning');
+                            return;
+                        }
+                        const lineData = this.CORPUS.lines[lineIndex];
+                        this.addAIMessage(`「${lineData.text}」——${lineData.analysis}`);
+                        this.speakText(`${lineData.text}——${lineData.analysis}`);
+                        this.learnedLines = Math.max(this.learnedLines, lineIndex + 1);
+                        this.updateProgress();
+                        this.saveProgress();
+                        this.updatePoemLineStyles();
+                    });
+                });
+
+                document.getElementById('configBtn').addEventListener('click', () => {
+                    document.getElementById('configModal').classList.remove('pointer-events-none', 'opacity-0');
+                });
+                document.getElementById('cancelConfig').addEventListener('click', () => {
+                    document.getElementById('configModal').classList.add('pointer-events-none', 'opacity-0');
+                });
+                document.getElementById('saveConfig').addEventListener('click', () => {
+                    const activeMode = document.querySelector('.mode-btn.bg-blue-100');
+                    this.config.mode = activeMode?.dataset.mode || 'local';
+                    this.config.backendUrl = document.getElementById('backendUrlInput').value;
+                    const voiceSelect = document.getElementById('voiceSelect');
+                    if (voiceSelect) {
+                        this.config.voiceIndex = voiceSelect.value;
+                    }
+                    localStorage.setItem('poetry_config', JSON.stringify(this.config));
+                    document.getElementById('configModal').classList.add('pointer-events-none', 'opacity-0');
+                    this.addAIMessage(`配置已保存！当前模式：${this.config.mode === 'deepseek' ? 'DeepSeek AI' : '本地AI'}`);
+                });
+
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mode-btn').forEach(b => {
+                            b.classList.remove('bg-blue-100', 'text-blue-700');
+                            b.classList.add('bg-[var(--stone)]', 'text-[var(--text-medium)]');
+                        });
+                        btn.classList.remove('bg-[var(--stone)]', 'text-[var(--text-medium)]');
+                        btn.classList.add('bg-blue-100', 'text-blue-700');
+                    });
+                });
+
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    if (confirm('确定要重置学习进度吗？')) {
+                        this.learnedLines = 0;
+                        this.currentReciteIndex = 0;
+                        this.state = 'IDLE';
+                        this.conversationHistory = [];
+                        this.currentReciteCardId = null;
+                        this.updateProgress();
+                        this.saveProgress();
+                        this.updatePoemLineStyles();
+                        this.showReciteControls(false);
+                        this.updateQuickReplies();
+                        document.getElementById('chatArea').innerHTML = '';
+                        this.addAIMessage("学习进度已重置！让我们重新开始学习《泊船瓜洲》吧！");
+                        this.speakText("学习进度已重置！让我们重新开始学习泊船瓜洲吧！");
+                    }
+                });
+
+                document.getElementById('startCamera').addEventListener('click', async () => {
+                    try {
+                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                            this.addAIMessage("您的浏览器不支持摄像头访问功能，请使用Chrome或Edge浏览器。");
+                            return;
+                        }
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } });
+                        this.videoStream = stream;
+                        document.getElementById('video').srcObject = stream;
+                        document.getElementById('cameraPlaceholder').style.display = 'none';
+                        document.getElementById('startCamera').disabled = true;
+                        document.getElementById('stopCamera').disabled = false;
+                        this.addAIMessage("摄像头已开启！📷 你可以在右侧聊天区进行表情识别等互动游戏。");
+                    } catch (err) {
+                        console.error('Camera error:', err);
+                        let errorMsg = "无法访问摄像头。";
+                        if (err.name === 'NotAllowedError') {
+                            errorMsg = "摄像头权限被拒绝，请在浏览器地址栏左侧点击锁图标，允许使用摄像头。";
+                        } else if (err.name === 'NotFoundError') {
+                            errorMsg = "未找到摄像头设备，请确认您的电脑已连接摄像头。";
+                        } else if (err.name === 'NotReadableError') {
+                            errorMsg = "摄像头被其他程序占用，请关闭其他使用摄像头的应用后重试。";
+                        }
+                        this.addAIMessage(errorMsg);
+                    }
+                });
+
+                document.getElementById('stopCamera').addEventListener('click', () => {
+                    if (this.videoStream) {
+                        this.videoStream.getTracks().forEach(t => t.stop());
+                        this.videoStream = null;
+                    }
+                    document.getElementById('video').srcObject = null;
+                    document.getElementById('cameraPlaceholder').style.display = 'flex';
+                    document.getElementById('startCamera').disabled = false;
+                    document.getElementById('stopCamera').disabled = true;
+                });
+
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        window.speechSynthesis.getVoices();
+                    };
+                }
+
+                document.getElementById('gameBtn').addEventListener('click', () => this.showGameMenu());
+                document.getElementById('poetBtn').addEventListener('click', () => this.showModal('poetModal'));
+                document.getElementById('reportBtn').addEventListener('click', () => this.showReport());
+                document.getElementById('closeGame').addEventListener('click', () => this.hideModal('gameModal'));
+                document.getElementById('closePoet').addEventListener('click', () => this.hideModal('poetModal'));
+                document.getElementById('closeReport').addEventListener('click', () => this.hideModal('reportModal'));
+            },
+
+            showModal(id) {
+                document.getElementById(id).classList.remove('pointer-events-none', 'opacity-0');
+            },
+
+            hideModal(id) {
+                document.getElementById(id).classList.add('pointer-events-none', 'opacity-0');
+            },
+
+            showGameMenu() {
+                document.getElementById('gameTitle').textContent = '🎮 趣味游戏';
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="space-y-3">
+                        <button class="w-full p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200 text-left hover:border-amber-400 hover:shadow-lg transition-all" onclick="App.startFillGame()">
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl">✏️</span>
+                                <div>
+                                    <p class="font-bold text-[var(--text-dark)]" style="font-size: 24px;">诗句填空</p>
+                                    <p class="text-[var(--text-light)]" style="font-size: 18px;">选出正确的字填入诗句中</p>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 text-left hover:border-blue-400 hover:shadow-lg transition-all" onclick="App.startSortGame()">
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl">🔄</span>
+                                <div>
+                                    <p class="font-bold text-[var(--text-dark)]" style="font-size: 24px;">诗句排序</p>
+                                    <p class="text-[var(--text-light)]" style="font-size: 18px;">把打乱的诗句排成正确的顺序</p>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="w-full p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 text-left hover:border-green-400 hover:shadow-lg transition-all" onclick="App.startMatchGame()">
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl">🔗</span>
+                                <div>
+                                    <p class="font-bold text-[var(--text-dark)]" style="font-size: 24px;">诗句配对</p>
+                                    <p class="text-[var(--text-light)]" style="font-size: 18px;">把诗句和解释正确配对</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                `;
+                this.showModal('gameModal');
+            },
+
+            startFillGame() {
+                this.gameScore = 0;
+                this.gameRound = 0;
+                this.gameCorrect = 0;
+                this.nextFillRound();
+            },
+
+            nextFillRound() {
+                this.gameRound++;
+                if (this.gameRound > 4) {
+                    this.endGame();
+                    return;
+                }
+
+                const lineIndex = this.gameRound - 1;
+                const line = this.POEM_DATA.content[lineIndex];
+                const charIndex = Math.floor(Math.random() * line.length);
+                const correctChar = line[charIndex];
+
+                const wrongChars = [];
+                const commonChars = '风花雪月山水云天江海河湖春秋冬夏红黄绿白青';
+                while (wrongChars.length < 3) {
+                    const rc = commonChars[Math.floor(Math.random() * commonChars.length)];
+                    if (rc !== correctChar && !wrongChars.includes(rc)) wrongChars.push(rc);
+                }
+
+                const options = [correctChar, ...wrongChars];
+                for (let i = options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [options[i], options[j]] = [options[j], options[i]];
+                }
+
+                const displayLine = line.substring(0, charIndex) + '___' + line.substring(charIndex + 1);
+
+                document.getElementById('gameTitle').textContent = `✏️ 诗句填空 第${this.gameRound}/4题`;
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="text-center mb-4">
+                        <p class="poem-text text-[var(--text-dark)]" style="font-size: 36px; padding: 12px; background: linear-gradient(135deg, var(--amber-50), var(--orange-50)); border-radius: 12px; border: 2px solid var(--amber-200);">${displayLine}</p>
+                        <p class="text-[var(--text-light)] mt-2" style="font-size: 28px;">选出缺失的字</p>
+                    </div>
+                    <div class="flex justify-center gap-4 mb-4">
+                        ${options.map(o => `<button class="w-24 h-24 text-5xl font-bold bg-white border-3 border-[var(--stone-dark)] rounded-xl hover:border-[var(--gold)] hover:bg-amber-50 hover:shadow-lg transition-all game-option" data-char="${o}" onclick="App.checkFillAnswer('${o}', '${correctChar}', this)">${o}</button>`).join('')}
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[var(--text-light)]" style="font-size: 28px;">得分：${this.gameScore} | 正确：${this.gameCorrect}/${this.gameRound - 1}</p>
+                    </div>
+                `;
+            },
+
+            checkFillAnswer(selected, correct, btn) {
+                document.querySelectorAll('.game-option').forEach(b => b.disabled = true);
+
+                const lineIndex = this.gameRound - 1;
+                const lineData = this.CORPUS.lines[lineIndex];
+                const displayLine = this.POEM_DATA.content[lineIndex];
+
+                if (selected === correct) {
+                    btn.classList.add('border-green-500', 'bg-green-50');
+                    btn.classList.remove('border-[var(--stone-dark)]');
+                    this.gameScore += 25;
+                    this.gameCorrect++;
+                } else {
+                    btn.classList.add('border-red-500', 'bg-red-50');
+                    btn.classList.remove('border-[var(--stone-dark)]');
+                    document.querySelectorAll('.game-option').forEach(b => {
+                        if (b.dataset.char === correct) {
+                            b.classList.add('border-green-500', 'bg-green-50');
+                            b.classList.remove('border-[var(--stone-dark)]');
+                        }
+                    });
+                }
+
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'mt-4 p-4 bg-amber-50 rounded-xl border-2 border-amber-200';
+                resultDiv.innerHTML = `
+                    <p class="poem-text text-[var(--text-dark)] text-center mb-2" style="font-size: 20px;">「${displayLine}」</p>
+                    <p class="text-[var(--text-medium)] text-center" style="font-size: 14px;">💡 ${lineData.analysis}</p>
+                `;
+                document.getElementById('gameContent').querySelector('.flex.justify-center.gap-3').parentNode.appendChild(resultDiv);
+
+                setTimeout(() => this.nextFillRound(), 3000);
+            },
+
+            startSortGame() {
+                this.gameScore = 0;
+                this.gameRound = 0;
+                this.gameCorrect = 0;
+
+                const shuffled = [...this.POEM_DATA.content];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                window._sortGameOrder = shuffled;
+                window._sortGameSelected = [];
+
+                document.getElementById('gameTitle').textContent = '🔄 诗句排序';
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="text-center mb-3">
+                        <p class="text-[var(--text-medium)]" style="font-size: 28px;">按正确顺序点击诗句</p>
+                    </div>
+                    <div id="sortOptions" class="space-y-2 mb-3">
+                        ${shuffled.map((line, i) => `<button class="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl text-center poem-text hover:border-blue-400 hover:bg-blue-100 hover:shadow-md transition-all sort-option" style="font-size: 28px; min-height: 70px; display: flex; align-items: center; justify-content: center;" data-line="${line}" data-idx="${i}" onclick="App.selectSortOption(this)">${line}</button>`).join('')}
+                    </div>
+                    <div id="sortResult" class="space-y-2 mb-3 min-h-[120px] p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border-2 border-dashed border-amber-300"></div>
+                    <div class="text-center">
+                        <button class="btn-secondary text-xl px-8 py-3" onclick="App.resetSortGame()">重新排列</button>
+                        <button class="btn-primary text-xl px-8 py-3 ml-4" onclick="App.checkSortAnswer()">提交答案</button>
+                    </div>
+                `;
+            },
+
+            selectSortOption(btn) {
+                if (btn.classList.contains('opacity-50')) return;
+                btn.classList.add('opacity-50');
+                window._sortGameSelected.push(btn.dataset.line);
+
+                const result = document.getElementById('sortResult');
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-white border-2 border-[var(--gold)] rounded-xl text-center poem-text text-[var(--text-dark)] shadow-md';
+                div.style.fontSize = '28px';
+                div.textContent = btn.dataset.line;
+                result.appendChild(div);
+            },
+
+            resetSortGame() {
+                window._sortGameSelected = [];
+                document.querySelectorAll('.sort-option').forEach(b => b.classList.remove('opacity-50'));
+                document.getElementById('sortResult').innerHTML = '';
+            },
+
+            checkSortAnswer() {
+                const selected = window._sortGameSelected;
+                const correct = this.POEM_DATA.content;
+                const isCorrect = selected.length === correct.length && selected.every((line, i) => line === correct[i]);
+
+                if (isCorrect) {
+                    this.gameScore = 100;
+                    this.gameCorrect = 4;
+                    document.getElementById('sortResult').innerHTML = '<div class="text-center p-3 bg-green-50 rounded-xl"><p class="text-green-700 font-bold" style="font-size: 18px;">🎉 完全正确！太棒了！</p></div>';
+                } else {
+                    document.getElementById('sortResult').innerHTML = `<div class="text-center p-3 bg-red-50 rounded-xl"><p class="text-red-700 font-bold" style="font-size: 18px;">❌ 顺序不对，正确顺序是：</p><p class="poem-text text-[var(--text-dark)] mt-2" style="font-size: 16px;">${correct.join(' → ')}</p></div>`;
+                }
+
+                document.querySelectorAll('.sort-option').forEach(b => b.disabled = true);
+                setTimeout(() => this.endGame(), 2000);
+            },
+
+            startMatchGame() {
+                this.gameScore = 0;
+                this.gameRound = 0;
+                this.gameCorrect = 0;
+                window._matchSelected = null;
+                window._matchCorrect = 0;
+
+                const pairs = this.CORPUS.lines.map((l, i) => ({
+                    line: l.text,
+                    hint: l.analysis.length > 120 ? l.analysis.substring(0, 120) + '...' : l.analysis,
+                    fullAnalysis: l.analysis,
+                    id: i
+                }));
+
+                const shuffledLines = [...pairs].sort(() => Math.random() - 0.5);
+                const shuffledHints = [...pairs].sort(() => Math.random() - 0.5);
+
+                document.getElementById('gameTitle').textContent = '🔗 诗句配对';
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="text-center mb-3">
+                        <p class="text-[var(--text-medium)]" style="font-size: 28px;">点击左侧诗句，再点击右侧对应解释</p>
+                    </div>
+                    <div class="flex gap-4 h-[650px]">
+                        <div class="flex-1 space-y-2">
+                            <p class="text-center font-bold text-[var(--text-medium)]" style="font-size: 26px; padding-bottom: 4px; border-bottom: 2px solid var(--amber-200);">诗句</p>
+                            ${shuffledLines.map(p => `<button class="w-full p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl text-center poem-text text-[var(--text-dark)] hover:border-amber-400 hover:shadow-md transition-all match-line" style="font-size: 28px; min-height: 80px; display: flex; align-items: center; justify-content: center;" data-id="${p.id}" data-type="line" onclick="App.selectMatchItem(this)">${p.line}</button>`).join('')}
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <p class="text-center font-bold text-[var(--text-medium)]" style="font-size: 26px; padding-bottom: 4px; border-bottom: 2px solid var(--blue-200);">解释</p>
+                            ${shuffledHints.map(p => `<button class="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl text-left text-[var(--text-dark)] hover:border-blue-400 hover:shadow-md transition-all match-hint" style="font-size: 24px; min-height: 80px; display: flex; align-items: flex-start;" data-id="${p.id}" data-type="hint" onclick="App.selectMatchItem(this)">${p.hint}</button>`).join('')}
+                        </div>
+                    </div>
+                    <div id="matchResult" class="mt-3 text-center" style="font-size: 28px;"></div>
+                `;
+            },
+
+            selectMatchItem(btn) {
+                if (btn.classList.contains('bg-green-100') || btn.classList.contains('bg-red-100')) return;
+
+                if (!window._matchSelected) {
+                    window._matchSelected = { id: btn.dataset.id, type: btn.dataset.type, el: btn };
+                    btn.classList.add('ring-2', 'ring-[var(--gold)]');
+                } else {
+                    if (window._matchSelected.type === btn.dataset.type) {
+                        window._matchSelected.el.classList.remove('ring-2', 'ring-[var(--gold)]');
+                        window._matchSelected = { id: btn.dataset.id, type: btn.dataset.type, el: btn };
+                        btn.classList.add('ring-2', 'ring-[var(--gold)]');
+                        return;
+                    }
+
+                    const prev = window._matchSelected;
+                    prev.el.classList.remove('ring-2', 'ring-[var(--gold)]');
+
+                    if (prev.id === btn.dataset.id) {
+                        prev.el.classList.remove('border-amber-200', 'border-blue-200');
+                        prev.el.classList.add('bg-green-100', 'border-green-400');
+                        btn.classList.remove('border-amber-200', 'border-blue-200');
+                        btn.classList.add('bg-green-100', 'border-green-400');
+                        window._matchCorrect++;
+                        this.gameScore += 25;
+                    } else {
+                        prev.el.classList.add('bg-red-100', 'border-red-400');
+                        btn.classList.add('bg-red-100', 'border-red-400');
+                        setTimeout(() => {
+                            prev.el.classList.remove('bg-red-100', 'border-red-400');
+                            btn.classList.remove('bg-red-100', 'border-red-400');
+                        }, 800);
+                    }
+
+                    window._matchSelected = null;
+
+                    if (window._matchCorrect >= 4) {
+                        this.gameCorrect = 4;
+                        document.getElementById('matchResult').innerHTML = '<p class="text-green-700 font-bold" style="font-size: 18px;">🎉 全部配对成功！</p>';
+                        setTimeout(() => this.endGame(), 1500);
+                    }
+                }
+            },
+
+            endGame() {
+                const stars = this.gameScore >= 100 ? '⭐⭐⭐' : this.gameScore >= 50 ? '⭐⭐' : '⭐';
+                const message = this.gameScore >= 100 ? '满分！你是古诗小达人！' : this.gameScore >= 50 ? '不错哦！继续加油！' : '多练习就能进步！';
+
+                document.getElementById('gameTitle').textContent = '🎮 游戏结束';
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="text-center py-6">
+                        <p class="text-5xl mb-4">${stars}</p>
+                        <p class="font-bold text-[var(--text-dark)]" style="font-size: 24px;">${this.gameScore}分</p>
+                        <p class="text-[var(--text-medium)] mt-2" style="font-size: 16px;">${message}</p>
+                        <p class="text-[var(--text-light)] mt-1" style="font-size: 14px;">正确：${this.gameCorrect}题</p>
+                        <div class="flex justify-center gap-3 mt-6">
+                            <button class="btn-primary" onclick="App.showGameMenu()">再玩一次</button>
+                            <button class="btn-secondary" onclick="App.hideModal('gameModal')">返回学习</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            showReport() {
+                const progress = Math.round((this.learnedLines / 4) * 100);
+                const level = this.learnedLines >= 4 ? '古诗达人' : this.learnedLines >= 3 ? '学习达人' : this.learnedLines >= 1 ? '初学者' : '新手上路';
+                const levelEmoji = this.learnedLines >= 4 ? '🏆' : this.learnedLines >= 3 ? '🌟' : this.learnedLines >= 1 ? '📖' : '🌱';
+
+                document.getElementById('reportContent').innerHTML = `
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-3xl mx-auto shadow-lg mb-2">${levelEmoji}</div>
+                        <p class="font-bold text-[var(--text-dark)]" style="font-size: 20px;">${level}</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-amber-50 rounded-xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-amber-700" style="font-size: 14px;">📖 学习进度</span>
+                                <span class="text-amber-700 font-bold" style="font-size: 14px;">${progress}%</span>
+                            </div>
+                            <div class="w-full bg-white rounded-full h-3 overflow-hidden">
+                                <div class="progress-bar h-full" style="width: ${progress}%"></div>
+                            </div>
+                            <p class="text-amber-600 mt-1" style="font-size: 13px;">已学 ${this.learnedLines}/4 句</p>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-xl">
+                            <p class="font-bold text-blue-700 mb-2" style="font-size: 14px;">📊 诗句掌握情况</p>
+                            ${this.POEM_DATA.content.map((line, i) => {
+                                const mastered = i < this.learnedLines;
+                                return `<div class="flex items-center gap-2 mb-1">
+                                    <span class="${mastered ? 'text-green-600' : 'text-gray-400'}" style="font-size: 14px;">${mastered ? '✅' : '⬜'}</span>
+                                    <span class="poem-text text-[var(--text-dark)]" style="font-size: 15px;">${line}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                        <div class="p-3 bg-green-50 rounded-xl">
+                            <p class="font-bold text-green-700 mb-1" style="font-size: 14px;">💡 学习建议</p>
+                            <p class="text-[var(--text-dark)]" style="font-size: 15px;">${this.learnedLines >= 4 ? '太棒了！你已经掌握了整首诗！试试游戏模式巩固一下吧！' : this.learnedLines >= 2 ? '进展不错！继续学习剩下的诗句，你可以的！' : '刚开始学习，点击左侧诗句查看详解，然后试试背诵模式吧！'}</p>
+                        </div>
+                    </div>
+                `;
+                this.showModal('reportModal');
+            },
+        };
+
+        App.init();
+    </script>
+</body>
+</html>
