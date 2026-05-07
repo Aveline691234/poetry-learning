@@ -12,7 +12,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-API_KEY = os.environ.get('DEEPSEEK_API_KEY', 'sk-d76d537e0be74fa9a89b54286b946d52')
+API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 API_URL = 'https://api.deepseek.com/chat/completions'
 
 CHUGU_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chugu')
